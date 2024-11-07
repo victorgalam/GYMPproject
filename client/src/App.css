@@ -1,0 +1,81 @@
+/* צבע רקע כללי */
+body {
+  background-color: #f3f4f6;
+  font-family: Arial, sans-serif;
+  color: #333;
+}
+
+/* מרכזת את תיבת הכניסה */
+.container {
+  max-width: 500px;
+  margin: auto;
+  padding-top: 40px;
+}
+
+/* כותרות */
+h3, h4 {
+  color: #4a90e2;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* עיצוב לטופס הכניסה */
+form {
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* שדות טופס הכניסה */
+.form-control {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-bottom: 15px;
+}
+
+/* כפתור התחברות */
+.btn-primary {
+  background-color: #4a90e2;
+  border: none;
+  border-radius: 5px;
+  padding: 10px;
+  transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+  background-color: #357abd;
+}
+
+/* פאנל ניהול */
+#adminPanel {
+  max-width: 700px;
+  margin: 30px auto;
+}
+
+.nav-pills .nav-link {
+  color: #4a90e2;
+  border-radius: 5px;
+  padding: 10px;
+  font-weight: bold;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.nav-pills .nav-link.active {
+  background-color: #4a90e2;
+  color: #fff;
+}
+
+.nav-pills .nav-link:hover {
+  background-color: #357abd;
+  color: #fff;
+}
+
+/* עיצוב לאזורים נבחרים */
+.section-content {
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+}
