@@ -6,27 +6,22 @@ import AdminLogin from './components/AdminLogin';
 import AdminPanel from './components/AdminPanel';
 import UserLogin from './components/UserLogin';
 import UserRegister from './components/UserRegister'; // ייבוא קומפוננטת הרישום של המשתמש
-
+import Navbar from './components/Navbar'; 
 
 
 function App() {
   return (
     <Router>
-      <Routes>
-
-      <Route path="/login" element={<UserLogin />} /> {/* דף התחברות */}
-        {/* מסלול לדף הבית של משתמש רגיל */}
-        <Route path="/" element={<Home />} />
-        
-        {/* מסלול לדף התחברות של אדמין */}
-        <Route path="/admin" element={<AdminLogin />} />
-
-        {/* מסלול לפאנל ניהול אדמין (רק אם האדמין התחבר) */}
-        <Route path="/admin/panel" element={<AdminPanel />} />
-
-        <Route path="/register" element={<UserRegister />} /> {/* רישום משתמש רגיל */}
-
-      </Routes>
+      <div>
+        <Navbar />  {/* הוסף את הנאבבר כאן */}
+        <Routes>
+          <Route path="/login" element={<UserLogin />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/panel" element={<AdminPanel />} />
+          <Route path="/register" element={<UserRegister />} />
+        </Routes>
+      </div>
     </Router>
   );
 }
