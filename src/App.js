@@ -8,6 +8,7 @@ import UserLogin from './components/UserLogin';
 import UserRegister from './components/UserRegister'; // ייבוא קומפוננטת הרישום של המשתמש
 import Navbar from './components/Navbar'; 
 import WorkoutVideos from './components/WorkoutVideos';
+import Introduction from './components/Introduction'; 
 
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/panel" element={<AdminPanel />} />
           <Route path="/register" element={<UserRegister />} />
+          <Route path="/introduction" element={<Introduction />} />
         </Routes>
       </div>
     </Router>
