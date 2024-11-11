@@ -31,7 +31,7 @@ const Introduction = () => {
   const handleNext = () => {
     if (currentStep === steps.length - 1) {
       // כאן תוכל להוסיף לוגיקה לשמירת סטטוס שהמשתמש כבר ראה את דף ההיכרות
-      navigate('/home'); // או לכל דף אחר שתרצה להפנות אליו
+      navigate('/'); // או לכל דף אחר שתרצה להפנות אליו
     } else {
       setCurrentStep(prev => prev + 1);
     }

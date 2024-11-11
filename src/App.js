@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Home from './components/Home';
+import Home from './components/UserPanel';
 import AdminLogin from './components/AdminLogin';
 import AdminPanel from './components/AdminPanel';
 import UserLogin from './components/UserLogin';
@@ -9,7 +9,10 @@ import UserRegister from './components/UserRegister'; // ייבוא קומפונ
 import Navbar from './components/Navbar'; 
 import WorkoutVideos from './components/WorkoutVideos';
 import Introduction from './components/Introduction'; 
-
+import LocationsMap from './components/LocationsMap';
+import LandingPage from './components/LandingPage';
+import About from './components/About';
+import Contact from './components/Contact';
 
 function App() {
   return (
@@ -19,11 +22,15 @@ function App() {
         <Routes>
           <Route path="/workout-videos" element={<WorkoutVideos />} />
           <Route path="/login" element={<UserLogin />} />
-          <Route path="/" element={<Home />} />
+          <Route path="/UserPanel" element={<Home />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/panel" element={<AdminPanel />} />
           <Route path="/register" element={<UserRegister />} />
           <Route path="/introduction" element={<Introduction />} />
+          <Route path="/locations" element={<LocationsMap />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
         </Routes>
       </div>
     </Router>
