@@ -7,6 +7,7 @@ import AdminPanel from './components/AdminPanel';
 import UserLogin from './components/UserLogin';
 import UserRegister from './components/UserRegister'; // ייבוא קומפוננטת הרישום של המשתמש
 import Navbar from './components/Navbar'; 
+import WorkoutVideos from './components/WorkoutVideos';
 
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
       <div>
         <Navbar />  {/* הוסף את הנאבבר כאן */}
         <Routes>
+          <Route path="/workout-videos" element={<WorkoutVideos />} />
           <Route path="/login" element={<UserLogin />} />
           <Route path="/" element={<Home />} />
           <Route path="/admin" element={<AdminLogin />} />
