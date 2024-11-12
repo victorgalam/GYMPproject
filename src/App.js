@@ -13,6 +13,9 @@ import LocationsMap from './components/LocationsMap';
 import LandingPage from './components/LandingPage';
 import About from './components/About';
 import Contact from './components/Contact';
+import GymPersonalDetails from './components/GymPersonalDetails';
+import GymRecommendations from './components/GymRecommendations';
+import Dashboard from './components/Dashboard';
 
 function App() {
   return (
@@ -31,7 +34,10 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-        </Routes>
+          <Route path="/gym-details" element={<GymPersonalDetails />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+
+          </Routes>
       </div>
     </Router>
   );

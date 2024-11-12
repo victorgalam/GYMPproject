@@ -4,19 +4,27 @@ import { useNavigate } from 'react-router-dom';
 function UserRegister() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const navigate = useNavigate();
 
   const handleRegister = (e) => {
     e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      setPasswordError('הסיסמאות אינן תואמות');
+      return;
+    }
+    
+    setPasswordError('');
     console.log('User Registered:', { username, password, email });
-    navigate('/home');
+    // שינוי הניווט לדף הפרטים האישיים במקום לדף הבית
+    navigate('/gym-details');
   };
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
-      {/* Navbar - כבר קיים בApp.js */}
-      
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto bg-white rounded-lg shadow-sm p-6">
           <div className="mb-6">
@@ -53,6 +61,28 @@ function UserRegister() {
                 required
               />
             </div>
+
+            {/* אימות סיסמה */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                אימות סיסמה
+              </label>
+              <input
+                type="password"
+                placeholder="הכנס שוב את הסיסמה"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+
+            {/* הודעת שגיאה לאי התאמת סיסמאות */}
+            {passwordError && (
+              <div className="p-3 mb-4 text-sm text-red-800 bg-red-100 rounded-lg">
+                {passwordError}
+              </div>
+            )}
 
             {/* אימייל */}
             <div>

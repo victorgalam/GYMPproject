@@ -1,5 +1,19 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, LoadScript, MarkerF, InfoWindow } from '@react-google-maps/api';
+
+// קבועים גלובליים
+const libraries = ['places'];
+const apiKey = "AIzaSyCwQtPxiF-P43WXmrcOHqQn1ULmzp25Qw";
+
+const mapStyles = {
+    height: "70vh",
+    width: "100%"
+};
+
+const defaultCenter = {
+    lat: 32.0853,
+    lng: 34.7818
+};
 
 const LocationsMap = () => {
     const [places, setPlaces] = useState([]);
@@ -8,17 +22,6 @@ const LocationsMap = () => {
     const [userLocation, setUserLocation] = useState(null);
     const [map, setMap] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    // מרכז ברירת מחדל (תל אביב)
-    const defaultCenter = {
-        lat: 36.0853,
-        lng: 34.7818
-    };
-
-    const mapStyles = {
-        height: "70vh",
-        width: "100%"
-    };
 
     // קבלת מיקום המשתמש הנוכחי
     const getCurrentLocation = () => {
@@ -49,42 +52,46 @@ const LocationsMap = () => {
     // חיפוש מקומות לפי סוג
     const searchPlaces = useCallback((location, type) => {
         if (!map) return;
-        const service = new window.google.maps.places.PlacesService(map);
-        const request = {
-            location: location,
-            radius: '5000',
-            type: type === 'gym' ? ['gym'] : ['park']
-        };
+        try {
+            const service = new window.google.maps.places.PlacesService(map);
+            const request = {
+                location: location,
+                radius: '5000',
+                type: type === 'gym' ? ['gym'] : ['park']
+            };
 
-        service.nearbySearch(request, (results, status) => {
-            if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-                const formattedPlaces = results.map(place => ({
-                    id: place.place_id,
-                    name: place.name,
-                    location: {
-                        lat: place.geometry.location.lat(),
-                        lng: place.geometry.location.lng()
-                    },
-                    rating: place.rating,
-                    vicinity: place.vicinity,
-                    type: type,
-                    icon: type === 'gym' ?
-                        'http://maps.google.com/mapfiles/ms/icons/blue-dot.png' :
-                        'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
-                }));
+            service.nearbySearch(request, (results, status) => {
+                if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
+                    const formattedPlaces = results.map(place => ({
+                        id: place.place_id,
+                        name: place.name,
+                        location: {
+                            lat: place.geometry.location.lat(),
+                            lng: place.geometry.location.lng()
+                        },
+                        rating: place.rating,
+                        vicinity: place.vicinity,
+                        type: type,
+                        icon: type === 'gym' ?
+                            'http://maps.google.com/mapfiles/ms/icons/blue-dot.png' :
+                            'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                    }));
 
-                setPlaces(prev => {
-                    if (showType === 'all') {
-                        // אם מציגים הכל, שומרים את כל המקומות החדשים
-                        const existingIds = new Set(prev.filter(p => p.type !== type).map(p => p.id));
-                        return [...prev.filter(p => p.type !== type), ...formattedPlaces.filter(p => !existingIds.has(p.id))];
-                    } else {
-                        // אם מסננים לפי סוג, שומרים רק את המקומות מהסוג הנבחר
-                        return formattedPlaces;
-                    }
-                });
-            }
-        });
+                    setPlaces(prev => {
+                        if (showType === 'all') {
+                            const existingIds = new Set(prev.filter(p => p.type !== type).map(p => p.id));
+                            return [...prev.filter(p => p.type !== type), ...formattedPlaces.filter(p => !existingIds.has(p.id))];
+                        } else {
+                            return formattedPlaces;
+                        }
+                    });
+                } else {
+                    console.error("Error in nearbySearch:", status);
+                }
+            });
+        } catch (error) {
+            console.error("Error in searchPlaces:", error);
+        }
     }, [map, showType]);
 
     // קבלת פרטים נוספים על מקום
@@ -115,6 +122,7 @@ const LocationsMap = () => {
 
     // טעינת המפה
     const onMapLoad = useCallback((mapInstance) => {
+        console.log("Map loaded successfully");
         setMap(mapInstance);
     }, []);
 
@@ -122,9 +130,8 @@ const LocationsMap = () => {
     useEffect(() => {
         try {
             if (map && userLocation) {
-                // איפוס המקומות בעת שינוי סוג
                 if (showType !== 'all') {
-                    setPlaces([]); // מנקה את כל המקומות הקיימים
+                    setPlaces([]); 
                 }
 
                 if (showType === 'all' || showType === 'gyms') {
@@ -150,43 +157,44 @@ const LocationsMap = () => {
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-center mb-4">מפת מקומות</h1>
 
-                    {/* כפתורי סינון ומיקום */}
-                   
                     <div className="flex flex-wrap justify-center gap-4 mb-6">
                         <div className="flex space-x-4 space-x-reverse">
                             <button
                                 onClick={() => {
                                     setShowType('all');
-                                    setPlaces([]); // מנקה את כל המקומות לפני טעינה מחדש
+                                    setPlaces([]);
                                 }}
-                                className={`px-4 py-2 rounded-full transition duration-200 ${showType === 'all'
+                                className={`px-4 py-2 rounded-full transition duration-200 ${
+                                    showType === 'all'
                                         ? 'bg-blue-600 text-white'
                                         : 'bg-white text-gray-600 hover:bg-gray-50'
-                                    }`}
+                                }`}
                             >
                                 הכל
                             </button>
                             <button
                                 onClick={() => {
                                     setShowType('gyms');
-                                    setPlaces([]); // מנקה את כל המקומות לפני טעינה מחדש
+                                    setPlaces([]);
                                 }}
-                                className={`px-4 py-2 rounded-full transition duration-200 ${showType === 'gyms'
+                                className={`px-4 py-2 rounded-full transition duration-200 ${
+                                    showType === 'gyms'
                                         ? 'bg-blue-600 text-white'
                                         : 'bg-white text-gray-600 hover:bg-gray-50'
-                                    }`}
+                                }`}
                             >
                                 חדרי כושר
                             </button>
                             <button
                                 onClick={() => {
                                     setShowType('parks');
-                                    setPlaces([]); // מנקה את כל המקומות לפני טעינה מחדש
+                                    setPlaces([]);
                                 }}
-                                className={`px-4 py-2 rounded-full transition duration-200 ${showType === 'parks'
+                                className={`px-4 py-2 rounded-full transition duration-200 ${
+                                    showType === 'parks'
                                         ? 'bg-blue-600 text-white'
                                         : 'bg-white text-gray-600 hover:bg-gray-50'
-                                    }`}
+                                }`}
                             >
                                 פארקים
                             </button>
@@ -201,17 +209,18 @@ const LocationsMap = () => {
                         </button>
                     </div>
 
-                    {/* מפה */}
-                    <LoadScript googleMapsApiKey="AIzaSyCwQtPxiF-P43WXmrcOHqQn1ULmzp25QwI" libraries={['places']}>
+                    <LoadScript 
+                        googleMapsApiKey={apiKey} 
+                        libraries={libraries}
+                    >
                         <GoogleMap
                             mapContainerStyle={mapStyles}
                             zoom={14}
                             center={userLocation || defaultCenter}
                             onLoad={onMapLoad}
                         >
-                            {/* סמן המיקום שלי */}
                             {userLocation && (
-                                <Marker
+                                <MarkerF
                                     position={userLocation}
                                     icon={{
                                         url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
@@ -220,9 +229,8 @@ const LocationsMap = () => {
                                 />
                             )}
 
-                            {/* סמני המקומות */}
                             {places.map(place => (
-                                <Marker
+                                <MarkerF
                                     key={place.id}
                                     position={place.location}
                                     icon={{
@@ -236,7 +244,6 @@ const LocationsMap = () => {
                                 />
                             ))}
 
-                            {/* חלון מידע */}
                             {selectedPlace && (
                                 <InfoWindow
                                     position={selectedPlace.location}
@@ -292,7 +299,6 @@ const LocationsMap = () => {
                                                         לאתר האינטרנט
                                                     </a>
                                                 )}
-
 
                                                 <button
                                                     onClick={() => {
