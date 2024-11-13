@@ -60,3 +60,4 @@ exports.getUsers = async function (req, res, next) {
 exports.getStatistic = function (req, res, next) {
     // הוספת לוגיקה לסטטיסטיקות
 };
+

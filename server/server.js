@@ -1,7 +1,17 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 
 const app = express();
+app.use(express.json());
+
+app.use(cors({
+    origin: 'http://localhost:3001', // הכתובת של הקליינט
+    credentials: true, // אם אתה משתמש ב-cookies
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // שיטות HTTP מורשות
+    allowedHeaders: ['Content-Type', 'Authorization'] // כותרות מורשות
+}));
+
 app.use(express.json());
 
 // חיבור למסד הנתונים MongoDB

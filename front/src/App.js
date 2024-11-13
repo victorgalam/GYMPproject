@@ -17,6 +17,7 @@ import GymPersonalDetails from './components/GymPersonalDetails';
 import GymRecommendations from './components/GymRecommendations';
 import Dashboard from './components/Dashboard';
 
+
 function App() {
   return (
     <Router>

@@ -10,4 +10,5 @@ userRouter.patch('/:id', userController.updateUserById);
 userRouter.delete('/:id', userController.deleteUserById);
 userRouter.get('/get/statistic', userController.getStatistic);
 
+
 module.exports = userRouter;
