@@ -3,6 +3,7 @@ var CurrentUser = require('./UserModel');
 // יצירת משתמש חדש
 exports.createUser = async function (req, res, next) {
     try {
+        console.log(req.body)
         const newUser = await CurrentUser.create(req.body);
         res.status(201).json({
             status: "success",

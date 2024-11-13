@@ -17,7 +17,6 @@ var userSchema = new Schema({
 
    age: { type: Number, min: 0 },
 
-   id: { type: Number, unique: true },
 
    join: { type: Date, default: Date.now },
 
