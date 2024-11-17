@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 
 function AdminPanel() {
   const [activeSection, setActiveSection] = useState('users');
+  const [searchQuery, setSearchQuery] = useState('');
   
-  // מידע לדוגמה - בפרויקט אמיתי יגיע מהשרת
   const [users, setUsers] = useState([
     { id: 1, username: 'user1', email: 'user1@example.com', role: 'member' },
     { id: 2, username: 'user2', email: 'user2@example.com', role: 'trainer' }
@@ -26,6 +26,13 @@ function AdminPanel() {
   };
 
   const [editingUser, setEditingUser] = useState(null);
+  
+  // פונקציית סינון משתמשים
+  const filteredUsers = users.filter(user => 
+    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.role.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   
   // טופס הוספת אירוע
   const [newEvent, setNewEvent] = useState({
@@ -77,6 +84,18 @@ function AdminPanel() {
           {activeSection === 'users' && (
             <div>
               <h3 className="text-xl font-bold mb-4">ניהול משתמשים</h3>
+              
+              {/* שדה חיפוש */}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="חיפוש לפי שם משתמש, אימייל או תפקיד..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-md"
+                />
+              </div>
+
               <div className="overflow-x-auto">
                 <table className="min-w-full">
                   <thead>
@@ -88,7 +107,7 @@ function AdminPanel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map(user => (
+                    {filteredUsers.map(user => (
                       <tr key={user.id} className="border-b">
                         <td className="px-6 py-4">{user.username}</td>
                         <td className="px-6 py-4">{user.email}</td>
