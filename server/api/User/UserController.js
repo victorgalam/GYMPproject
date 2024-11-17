@@ -1,18 +1,128 @@
 const { User, Login } = require('./UserModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 const userController = {
-    // פונקציית התחברות קיימת
+    // התחברות
     login: async (req, res) => {
-        // ... הקוד הקיים שלך
+        try {
+            const { username, password } = req.body;
+            console.log('Login attempt for:', username);
+
+            const user = await User.findOne({
+                $or: [
+                    { username: username },
+                    { email: username }
+                ]
+            }).select('+password');
+
+            if (!user) {
+                return res.status(401).json({
+                    status: 'error',
+                    message: 'שם משתמש או סיסמה לא נכונים'
+                });
+            }
+
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+            if (!isPasswordValid) {
+                return res.status(401).json({
+                    status: 'error',
+                    message: 'שם משתמש או סיסמה לא נכונים'
+                });
+            }
+
+            const token = jwt.sign(
+                { 
+                    id: user._id,
+                    username: user.username,
+                    email: user.email,
+                    role: user.role // הוספת תפקיד לטוקן
+                },
+                JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+
+            const loginRecord = await Login.create({
+                user: user._id,
+                timestamp: new Date(),
+                ip: req.ip,
+                userAgent: req.headers['user-agent']
+            });
+            
+            res.status(200).json({
+                status: 'success',
+                data: {
+                    user: {
+                        id: user._id,
+                        username: user.username,
+                        email: user.email,
+                        role: user.role
+                    },
+                    token,
+                    loginRecord
+                }
+            });
+        } catch (error) {
+            console.error('Login error:', error);
+            res.status(500).json({
+                status: 'error',
+                message: 'שגיאת התחברות'
+            });
+        }
     },
 
-    // Middleware אימות קיים
+    // אימות טוקן
     authenticateToken: async (req, res, next) => {
-        // ... הקוד הקיים שלך
+        try {
+            const authHeader = req.headers['authorization'];
+            const token = authHeader && authHeader.split(' ')[1];
+
+            if (!token) {
+                return res.status(401).json({
+                    status: 'error',
+                    message: 'לא נמצא טוקן הזדהות'
+                });
+            }
+
+            jwt.verify(token, JWT_SECRET, (err, decoded) => {
+                if (err) {
+                    return res.status(403).json({
+                        status: 'error',
+                        message: 'טוקן לא תקין או פג תוקף'
+                    });
+                }
+                req.user = decoded;
+                next();
+            });
+        } catch (error) {
+            console.error('Authentication error:', error);
+            res.status(500).json({
+                status: 'error',
+                message: 'שגיאת אימות'
+            });
+        }
+    },
+
+    // בדיקת הרשאות מנהל
+    isAdmin: async (req, res, next) => {
+        try {
+            if (!req.user || req.user.role !== 'admin') {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'אין הרשאות מתאימות'
+                });
+            }
+            next();
+        } catch (error) {
+            console.error('Admin check error:', error);
+            res.status(500).json({
+                status: 'error',
+                message: 'שגיאה בבדיקת הרשאות'
+            });
+        }
     },
 
     // קבלת כל המשתמשים
@@ -35,9 +145,18 @@ const userController = {
     // יצירת משתמש חדש
     createUser: async (req, res) => {
         try {
-            const { username, email, password } = req.body;
+            // בדיקת ולידציה
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'נתונים לא תקינים',
+                    errors: errors.array()
+                });
+            }
 
-            // בדיקה אם המשתמש קיים
+            const { username, email, password, role = 'user' } = req.body;
+
             const existingUser = await User.findOne({
                 $or: [{ username }, { email }]
             });
@@ -49,12 +168,13 @@ const userController = {
                 });
             }
 
-            // הצפנת סיסמה
             const hashedPassword = await bcrypt.hash(password, 12);
 
             const newUser = await User.create({
-                ...req.body,
-                password: hashedPassword
+                username,
+                email,
+                password: hashedPassword,
+                role
             });
 
             res.status(201).json({
@@ -63,7 +183,8 @@ const userController = {
                     user: {
                         id: newUser._id,
                         username: newUser.username,
-                        email: newUser.email
+                        email: newUser.email,
+                        role: newUser.role
                     }
                 }
             });
@@ -85,11 +206,21 @@ const userController = {
                 .limit(10)
                 .populate('user', 'username email');
 
+            const usersByRole = await User.aggregate([
+                {
+                    $group: {
+                        _id: '$role',
+                        count: { $sum: 1 }
+                    }
+                }
+            ]);
+
             res.status(200).json({
                 status: 'success',
                 data: {
                     totalUsers,
-                    recentLogins
+                    recentLogins,
+                    usersByRole
                 }
             });
         } catch (error) {
@@ -113,6 +244,14 @@ const userController = {
                 });
             }
 
+            // בדיקת הרשאות - רק מנהל או המשתמש עצמו יכולים לראות את הפרטים
+            if (req.user.role !== 'admin' && req.user.id !== user.id) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'אין הרשאות לצפייה בפרטי המשתמש'
+                });
+            }
+
             res.status(200).json({
                 status: 'success',
                 data: { user }
@@ -129,9 +268,28 @@ const userController = {
     // עדכון משתמש לפי ID
     updateUserById: async (req, res) => {
         try {
-            const { password, ...updateData } = req.body;
+            // בדיקת הרשאות - רק מנהל או המשתמש עצמו יכולים לעדכן
+            if (req.user.role !== 'admin' && req.user.id !== req.params.id) {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'אין הרשאות לעדכון המשתמש'
+                });
+            }
+
+            const { password, role, ...updateData } = req.body;
             
-            // אם יש עדכון סיסמה, נצפין אותה
+            // רק מנהל יכול לשנות תפקיד
+            if (role && req.user.role !== 'admin') {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'אין הרשאות לשינוי תפקיד'
+                });
+            }
+
+            if (role) {
+                updateData.role = role;
+            }
+
             if (password) {
                 updateData.password = await bcrypt.hash(password, 12);
             }
@@ -165,6 +323,14 @@ const userController = {
     // מחיקת משתמש לפי ID
     deleteUserById: async (req, res) => {
         try {
+            // רק מנהל יכול למחוק משתמשים
+            if (req.user.role !== 'admin') {
+                return res.status(403).json({
+                    status: 'error',
+                    message: 'אין הרשאות למחיקת משתמש'
+                });
+            }
+
             const user = await User.findByIdAndDelete(req.params.id);
             
             if (!user) {
@@ -174,7 +340,6 @@ const userController = {
                 });
             }
 
-            // מחיקת כל רשומות ההתחברות של המשתמש
             await Login.deleteMany({ user: req.params.id });
 
             res.status(200).json({
