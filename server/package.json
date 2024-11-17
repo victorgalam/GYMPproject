@@ -17,6 +17,7 @@
     "express-validator": "^7.2.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.1",
-    "mongose": "^0.0.2-security"
+    "mongose": "^0.0.2-security",
+    "dotenv": "^16.4.5"
   }
 }
