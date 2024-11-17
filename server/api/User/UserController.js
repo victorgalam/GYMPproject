@@ -2,7 +2,6 @@
 const { User, Login } = require('./UserModel');
 const bcrypt = require('bcryptjs');
 
-// בדיקה אם יש לנו את כל הפונקציות שאנחנו משתמשים בהן בראוטר
 const userController = {
     // התחברות
     login: async (req, res) => {
@@ -32,7 +31,13 @@ const userController = {
                 });
             }
 
-          
+            // יצירת רשומת התחברות חדשה
+            const loginRecord = await Login.create({
+                user: user._id,
+                lastLogin: new Date(),
+                active: true
+            });
+
             res.status(200).json({
                 status: 'success',
                 data: {
