@@ -3,36 +3,56 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
-app.use(express.json());
 
+// Middleware
+app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:3001', // הכתובת של הקליינט
-    credentials: true, // אם אתה משתמש ב-cookies
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // שיטות HTTP מורשות
-    allowedHeaders: ['Content-Type', 'Authorization'] // כותרות מורשות
+    origin: 'http://localhost:3001',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
+// Debug middleware
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
+    console.log('Body:', req.body);
+    next();
+});
 
-// חיבור למסד הנתונים MongoDB
+// Routes - שים לב לנתיב המעודכן
+const userRouter = require('./api/User/UserRoute');  // שינינו ל-UserRoute במקום UserRoutes
+app.use('/api/v1/users', userRouter);
+
+// MongoDB connection
 const strConnect = "mongodb+srv://victorgalam2000:Victor22@projectgym.dgofc.mongodb.net/?retryWrites=true&w=majority&appName=projectGYM";
 const OPT = { useNewUrlParser: true, useUnifiedTopology: true };
+
 mongoose.connect(strConnect, OPT)
     .then(() => console.log("Connected to MongoDB"))
-    .catch(err => console.log("MongoDB connection error:", err));
+    .catch(err => console.error("MongoDB connection error:", err));
 
-// ייבוא רוטרים
-const userRouter = require('./api/User/UserRoute');
-const exerciseRouter = require('./api/exercise/exerciseRoute');
-const registerRouter = require('./api/register/registerRoute');
-
-// הגדרת רוטים
-app.use('/api/v1/users', userRouter);
-app.use('/api/v1/exercises', exerciseRouter);
-app.use('/api/v1/registers', registerRouter);
-
-// הפעלת השרת
-const port = process.env.PORT || 3000;
-app.listen(port, function () {
-    console.log("Running on port " + port);
+// Error handling
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+        status: 'error',
+        message: err.message
+    });
 });
+
+// 404 handler
+app.use((req, res) => {
+    console.log('404 - Not Found:', req.method, req.path);
+    res.status(404).json({
+        status: 'error',
+        message: 'Route not found'
+    });
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+});
+
+module.exports = app;

@@ -1,33 +1,62 @@
-var mongoose = require("mongoose");
-var Schema = mongoose.Schema;
+// server/api/User/UserModel.js
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
-var userSchema = new Schema({
-   username: { 
-     type: String,
-     required: false,
-     trim: true,
-     maxlength: 100 },
+const userSchema = new mongoose.Schema({
+    username: { 
+        type: String,
+        required: [true, 'שם משתמש הוא שדה חובה'],
+        unique: true,
+        trim: true
+    },
+    email: { 
+        type: String, 
+        required: [true, 'אימייל הוא שדה חובה'], 
+        unique: true,
+        lowercase: true,
+        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'נא להזין כתובת אימייל תקינה']
+    },
+    password: {
+        type: String,
+        required: [true, 'סיסמה היא שדה חובה'],
+        minlength: 8,
+        select: false
+    }
+}, { 
+    timestamps: true 
+});
 
-   email: { 
-      type: String, 
-      required: true, 
-      unique: true, 
-      match: /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/
-   },
+// Middleware להצפנת סיסמה לפני שמירה
+userSchema.pre('save', async function(next) {
+    if (!this.isModified('password')) return next();
+    
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+});
 
-   age: { type: Number, min: 0 },
+// מתודה להשוואת סיסמאות
+userSchema.methods.comparePassword = async function(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
+};
 
+const loginSchema = new mongoose.Schema({
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    lastLogin: {
+        type: Date,
+        default: Date.now
+    },
+    active: {
+        type: Boolean,
+        default: true
+    }
+});
 
-   join: { type: Date, default: Date.now },
+const User = mongoose.model('User', userSchema);
+const Login = mongoose.model('Login', loginSchema);
 
-   password: { 
-    type: String, 
-    required: true, 
-    minlength: 8, 
-    select: false }
-
-}, 
-
-    { timestamps: true });
-
-module.exports = mongoose.model('user', userSchema)
+module.exports = { User, Login };

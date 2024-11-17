@@ -1,14 +1,23 @@
-// userRouter.js
+// server/api/User/UserRoute.js
 const express = require('express');
-const userRouter = express.Router();
+const router = express.Router();
 const userController = require('./UserController');
 
-userRouter.get('/', userController.getUsers);
-userRouter.post('/', userController.createUser);
-userRouter.get('/:id', userController.getUserById);
-userRouter.patch('/:id', userController.updateUserById);
-userRouter.delete('/:id', userController.deleteUserById);
-userRouter.get('/get/statistic', userController.getStatistic);
+// Debug middleware
+router.use((req, res, next) => {
+    console.log('User Router:', req.method, req.path);
+    next();
+});
 
+// Auth routes
+router.post('/login', userController.login);
 
-module.exports = userRouter;
+// User routes
+router.get('/', userController.getUsers);
+router.post('/', userController.createUser);
+router.get('/get/statistic', userController.getStatistic);
+router.get('/:id', userController.getUserById);
+router.patch('/:id', userController.updateUserById);
+router.delete('/:id', userController.deleteUserById);
+
+module.exports = router;

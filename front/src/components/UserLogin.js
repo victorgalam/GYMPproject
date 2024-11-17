@@ -1,95 +1,118 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import userService from '../service/UserService';
 
 function UserLogin() {
- const [username, setUsername] = useState('');
- const [password, setPassword] = useState('');
- const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    username: '',
+    password: ''
+  });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
- const handleLogin = (e) => {
-   e.preventDefault();
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
 
-   if (username === 'user' && password === 'userpassword') {
-     navigate('/home');
-   } else {
-     alert('שם משתמש או סיסמה אינם נכונים');
-   }
- };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
- return (
-   <div className="min-h-screen bg-gray-50" dir="rtl">
-     <main className="container mx-auto px-4 py-8">
-       <div className="max-w-md mx-auto bg-white rounded-lg shadow-sm p-6">
-         <div className="mb-6">
-           <h2 className="text-2xl font-bold text-center text-gray-800">התחברות למערכת</h2>
-         </div>
-         
-         <form onSubmit={handleLogin} className="space-y-4">
-           {/* שם משתמש */}
-           <div>
-             <label className="block text-sm font-medium text-gray-700 mb-1">
-               שם משתמש
-             </label>
-             <input
-               type="text"
-               placeholder="הכנס שם משתמש"
-               value={username}
-               onChange={(e) => setUsername(e.target.value)}
-               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-               required
-             />
-           </div>
+    try {
+      const response = await userService.login(formData);
+      
+      if (response.status === 'success') {
+        // שמירת שם המשתמש ב-localStorage
+        localStorage.setItem('username', response.data.user.username);
+        // ניווט לדף הפרטים האישיים
+        navigate('/personal-details');
+      } else {
+        setError(response.message || 'שגיאה בהתחברות');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err.message || 'שגיאה בהתחברות למערכת');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-           {/* סיסמה */}
-           <div>
-             <label className="block text-sm font-medium text-gray-700 mb-1">
-               סיסמה
-             </label>
-             <input
-               type="password"
-               placeholder="הכנס סיסמה"
-               value={password}
-               onChange={(e) => setPassword(e.target.value)}
-               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-               required
-             />
-           </div>
+  return (
+    <div className="min-h-screen bg-gray-50" dir="rtl">
+      <main className="container mx-auto px-4 py-8">
+        <div className="max-w-md mx-auto bg-white rounded-lg shadow-sm p-6">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-center text-gray-800">התחברות למערכת</h2>
+          </div>
+          
+          {error && (
+            <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
 
-           {/* כפתור התחברות */}
-           <div className="mt-6">
-             <button
-               type="submit"
-               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition duration-200"
-             >
-               התחבר
-             </button>
-           </div>
-         </form>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                שם משתמש
+              </label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
 
-         {/* קישורים נוספים */}
-         <div className="mt-4 text-center space-y-2">
-           <p className="text-sm text-gray-600">
-             אין לך חשבון?{' '}
-             <button
-               onClick={() => navigate('/register')}
-               className="text-blue-600 hover:text-blue-800 font-medium"
-             >
-               הירשם כאן
-             </button>
-           </p>
-           <p className="text-sm text-gray-600">
-             <button
-               onClick={() => navigate('/admin')}
-               className="text-blue-600 hover:text-blue-800 font-medium"
-             >
-               כניסת מנהל מערכת
-             </button>
-           </p>
-         </div>
-       </div>
-     </main>
-   </div>
- );
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                סיסמה
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+
+            <div className="mt-6">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full bg-blue-600 text-white font-medium py-3 px-4 rounded-md transition duration-200 ${
+                  isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+                }`}
+              >
+                {isLoading ? 'מתחבר...' : 'התחבר'}
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-4 text-center space-y-2">
+            <p className="text-sm text-gray-600">
+              אין לך חשבון?{' '}
+              <button
+                onClick={() => navigate('/register')}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
+                הירשם כאן
+              </button>
+            </p>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 }
 
 export default UserLogin;

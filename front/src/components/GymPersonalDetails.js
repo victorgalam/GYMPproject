@@ -1,18 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function GymPersonalDetails() {
   const navigate = useNavigate();
+  const [username, setUsername] = useState('');
   const [formData, setFormData] = useState({
     age: '',
     height: '',
     weight: '',
-    experience: 'מתחיל', // ברירת מחדל
+    experience: 'מתחיל',
     goals: [],
     medicalConditions: '',
     preferredTime: '',
     daysPerWeek: ''
   });
+
+  // בדיקת התחברות בטעינת הקומפוננטה
+  useEffect(() => {
+    const storedUsername = localStorage.getItem('username');
+    if (!storedUsername) {
+      navigate('/login');
+      return;
+    }
+    setUsername(storedUsername);
+  }, [navigate]);
 
   const trainingGoals = [
     'ירידה במשקל',
@@ -46,20 +57,29 @@ function GymPersonalDetails() {
   const handleSubmit = (e) => {
     e.preventDefault();
     // שמירת הנתונים ב-localStorage
-    localStorage.setItem('gymUserData', JSON.stringify(formData));
+    const userData = {
+      ...formData,
+      username: username // שמירת שם המשתמש יחד עם שאר הנתונים
+    };
+    localStorage.setItem('gymUserData', JSON.stringify(userData));
+    
     // ניווט לדשבורד עם הנתונים
     navigate('/dashboard', { 
-      state: { formData }
+      state: { formData: userData }
     });
-};
+  };
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-sm p-6">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-center text-gray-800">פרטים אישיים לאימון</h2>
-            <p className="text-center text-gray-600 mt-2">המידע הזה יעזור לנו להתאים את התוכנית עבורך</p>
+            <h2 className="text-2xl font-bold text-center text-gray-800">
+              שלום {username}, הזן את פרטיך האישיים
+            </h2>
+            <p className="text-center text-gray-600 mt-2">
+              המידע הזה יעזור לנו להתאים את התוכנית עבורך
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
