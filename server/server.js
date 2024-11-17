@@ -1,3 +1,4 @@
+require('dotenv').config(); // חייב להיות בהתחלה
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -7,7 +8,7 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:3001',
+    origin: process.env.CLIENT_URL || 'http://localhost:3001',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -20,21 +21,40 @@ app.use((req, res, next) => {
     next();
 });
 
-// Routes - שים לב לנתיב המעודכן
-const userRouter = require('./api/User/UserRoute');  // שינינו ל-UserRoute במקום UserRoutes
+// Routes
+const userRouter = require('./api/User/UserRoute');
 app.use('/api/v1/users', userRouter);
 
 // MongoDB connection
-const strConnect = "mongodb+srv://victorgalam2000:Victor22@projectgym.dgofc.mongodb.net/?retryWrites=true&w=majority&appName=projectGYM";
-const OPT = { useNewUrlParser: true, useUnifiedTopology: true };
+const OPT = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+};
 
-mongoose.connect(strConnect, OPT)
+mongoose.connect(process.env.MONGODB_URI, OPT)
     .then(() => console.log("Connected to MongoDB"))
     .catch(err => console.error("MongoDB connection error:", err));
 
-// Error handling
+// Error handling - כולל טיפול בשגיאות JWT
 app.use((err, req, res, next) => {
     console.error(err.stack);
+    
+    // טיפול בשגיאות JWT
+    if (err.name === 'JsonWebTokenError') {
+        return res.status(401).json({
+            status: 'error',
+            message: 'טוקן לא תקין'
+        });
+    }
+
+    if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({
+            status: 'error',
+            message: 'פג תוקף הטוקן'
+        });
+    }
+
+    // שגיאות אחרות
     res.status(500).json({
         status: 'error',
         message: err.message
@@ -53,6 +73,15 @@ app.use((req, res) => {
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
+    console.log(`CORS enabled for: ${process.env.CLIENT_URL}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received. Shutting down gracefully');
+    server.close(() => {
+        console.log('Process terminated');
+    });
 });
 
 module.exports = app;
