@@ -1,9 +1,11 @@
-// server/api/User/UserController.js
 const { User, Login } = require('./UserModel');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken'); // צריך להתקין את החבילה
+
+// נניח שיש לנו מפתח סודי בקובץ התצורה
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'; // רצוי לשמור במשתני סביבה
 
 const userController = {
-    // התחברות
     login: async (req, res) => {
         try {
             const { username, password } = req.body;
@@ -31,13 +33,25 @@ const userController = {
                 });
             }
 
-            // יצירת רשומת התחברות חדשה
+            // יצירת טוקן JWT
+            const token = jwt.sign(
+                { 
+                    id: user._id,
+                    username: user.username,
+                    email: user.email 
+                },
+                JWT_SECRET,
+                { expiresIn: '24h' } // תוקף הטוקן
+            );
+
+            // שמירת רשומת התחברות
             const loginRecord = await Login.create({
                 user: user._id,
-                lastLogin: new Date(),
-                active: true
+                timestamp: new Date(),
+                ip: req.ip,
+                userAgent: req.headers['user-agent']
             });
-
+            
             res.status(200).json({
                 status: 'success',
                 data: {
@@ -46,6 +60,7 @@ const userController = {
                         username: user.username,
                         email: user.email
                     },
+                    token, // שליחת הטוקן ללקוח
                     loginRecord
                 }
             });
@@ -58,133 +73,34 @@ const userController = {
         }
     },
 
-    // קבלת כל המשתמשים
-    getUsers: async (req, res) => {
+    // Middleware לאימות טוקן
+    authenticateToken: async (req, res, next) => {
         try {
-            const users = await User.find().select('-password');
-            res.status(200).json({
-                status: 'success',
-                data: users
-            });
-        } catch (error) {
-            res.status(500).json({
-                status: 'error',
-                message: error.message
-            });
-        }
-    },
+            const authHeader = req.headers['authorization'];
+            const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-    // יצירת משתמש חדש
-    createUser: async (req, res) => {
-        try {
-            const newUser = await User.create(req.body);
-            const userWithoutPassword = newUser.toObject();
-            delete userWithoutPassword.password;
-            
-            res.status(201).json({
-                status: 'success',
-                data: userWithoutPassword
-            });
-        } catch (error) {
-            res.status(400).json({
-                status: 'error',
-                message: error.message
-            });
-        }
-    },
-
-    // קבלת משתמש לפי ID
-    getUserById: async (req, res) => {
-        try {
-            const user = await User.findById(req.params.id).select('-password');
-            if (!user) {
-                return res.status(404).json({
+            if (!token) {
+                return res.status(401).json({
                     status: 'error',
-                    message: 'משתמש לא נמצא'
-                });
-            }
-            res.status(200).json({
-                status: 'success',
-                data: user
-            });
-        } catch (error) {
-            res.status(500).json({
-                status: 'error',
-                message: error.message
-            });
-        }
-    },
-
-    // עדכון משתמש
-    updateUserById: async (req, res) => {
-        try {
-            const updatedUser = await User.findByIdAndUpdate(
-                req.params.id,
-                req.body,
-                { new: true, runValidators: true }
-            ).select('-password');
-
-            if (!updatedUser) {
-                return res.status(404).json({
-                    status: 'error',
-                    message: 'משתמש לא נמצא'
+                    message: 'לא נמצא טוקן הזדהות'
                 });
             }
 
-            res.status(200).json({
-                status: 'success',
-                data: updatedUser
-            });
-        } catch (error) {
-            res.status(400).json({
-                status: 'error',
-                message: error.message
-            });
-        }
-    },
-
-    // מחיקת משתמש
-    deleteUserById: async (req, res) => {
-        try {
-            const user = await User.findByIdAndDelete(req.params.id);
-            if (!user) {
-                return res.status(404).json({
-                    status: 'error',
-                    message: 'משתמש לא נמצא'
-                });
-            }
-            res.status(204).json({
-                status: 'success',
-                data: null
-            });
-        } catch (error) {
-            res.status(500).json({
-                status: 'error',
-                message: error.message
-            });
-        }
-    },
-
-    // סטטיסטיקות
-    getStatistic: async (req, res) => {
-        try {
-            const totalUsers = await User.countDocuments();
-            const recentLogins = await Login.find()
-                .sort({ lastLogin: -1 })
-                .limit(10)
-                .populate('user', 'username email');
-
-            res.status(200).json({
-                status: 'success',
-                data: {
-                    totalUsers,
-                    recentLogins
+            jwt.verify(token, JWT_SECRET, (err, user) => {
+                if (err) {
+                    return res.status(403).json({
+                        status: 'error',
+                        message: 'טוקן לא תקין או פג תוקף'
+                    });
                 }
+                req.user = user;
+                next();
             });
         } catch (error) {
+            console.error('Authentication error:', error);
             res.status(500).json({
                 status: 'error',
-                message: error.message
+                message: 'שגיאת אימות'
             });
         }
     }
