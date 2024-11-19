@@ -1,4 +1,3 @@
-// server/api/User/UserModel.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -19,14 +18,19 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: [true, 'סיסמה היא שדה חובה'],
-        minlength: 8,
+        minlength: [6, 'סיסמה חייבת להכיל לפחות 6 תווים'],
         select: false
+    },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
     }
 }, { 
     timestamps: true 
 });
 
-// Middleware להצפנת סיסמה לפני שמירה
+// הצפנת סיסמה לפני שמירה
 userSchema.pre('save', async function(next) {
     if (!this.isModified('password')) return next();
     
@@ -35,24 +39,21 @@ userSchema.pre('save', async function(next) {
     next();
 });
 
-// מתודה להשוואת סיסמאות
+// השוואת סיסמאות
 userSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
+// מודל Login בסיסי
 const loginSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    lastLogin: {
+    timestamp: {
         type: Date,
         default: Date.now
-    },
-    active: {
-        type: Boolean,
-        default: true
     }
 });
 
