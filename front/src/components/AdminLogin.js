@@ -1,8 +1,8 @@
 // src/components/AdminLogin.js
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../service/authService';
-import { authService } from '../service/authService';
+import {api} from '../services/authService';
+import { authService } from '../services/authService';
 
 const AdminLogin = ({ onLoginSuccess }) => {
     const [credentials, setCredentials] = useState({ username: '', password: '' });
