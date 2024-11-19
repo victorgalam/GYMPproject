@@ -3,7 +3,14 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// קריאת משתני הסביבה
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+
+// בדיקת קיום המפתח הסודי
+if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET must be defined in environment variables');
+}
 
 const userController = {
     // התחברות
@@ -39,10 +46,10 @@ const userController = {
                     id: user._id,
                     username: user.username,
                     email: user.email,
-                    role: user.role // הוספת תפקיד לטוקן
+                    role: user.role
                 },
                 JWT_SECRET,
-                { expiresIn: '24h' }
+                { expiresIn: JWT_EXPIRES_IN } // שימוש במשתנה הסביבה
             );
 
             const loginRecord = await Login.create({
@@ -62,7 +69,8 @@ const userController = {
                         role: user.role
                     },
                     token,
-                    loginRecord
+                    loginRecord,
+                    expiresIn: JWT_EXPIRES_IN // הוספת מידע על תפוגת הטוקן
                 }
             });
         } catch (error) {
@@ -74,7 +82,7 @@ const userController = {
         }
     },
 
-    // אימות טוקן
+    // אימות טוקן - עדכון להשתמש במשתנה הסביבה
     authenticateToken: async (req, res, next) => {
         try {
             const authHeader = req.headers['authorization'];
