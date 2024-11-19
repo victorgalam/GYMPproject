@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import userService from '../service/UserService';
+import userService from '../services/UserService';
 
 function UserRegister() {
     const [formData, setFormData] = useState({
