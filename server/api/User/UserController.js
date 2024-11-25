@@ -13,7 +13,23 @@ if (!JWT_SECRET) {
 }
 
 const userController = {
-    // התחברות
+    // הרשמה - נשאר ללא שינוי כי לא דורש אותנטיקציה
+    createRegister: async (req, res) => {
+        try {
+            const newRegister = await User.create(req.body);
+            res.status(201).json({
+                status: "success",
+                data: newRegister
+            });
+        } catch (error) {
+            res.status(400).json({ 
+                status: "fail", 
+                message: error.message 
+            });
+        }
+    },
+
+    // התחברות - נשאר ללא שינוי כי לא דורש אותנטיקציה
     login: async (req, res) => {
         try {
             const { username, password } = req.body;
@@ -26,15 +42,7 @@ const userController = {
                 ]
             }).select('+password');
 
-            if (!user) {
-                return res.status(401).json({
-                    status: 'error',
-                    message: 'שם משתמש או סיסמה לא נכונים'
-                });
-            }
-
-            const isPasswordValid = await bcrypt.compare(password, user.password);
-            if (!isPasswordValid) {
+            if (!user || !(await bcrypt.compare(password, user.password))) {
                 return res.status(401).json({
                     status: 'error',
                     message: 'שם משתמש או סיסמה לא נכונים'
@@ -49,16 +57,18 @@ const userController = {
                     role: user.role
                 },
                 JWT_SECRET,
-                { expiresIn: JWT_EXPIRES_IN } // שימוש במשתנה הסביבה
+                { expiresIn: JWT_EXPIRES_IN }
             );
 
-            const loginRecord = await Login.create({
+            // תיעוד ההתחברות
+            await Login.create({
                 user: user._id,
                 timestamp: new Date(),
                 ip: req.ip,
                 userAgent: req.headers['user-agent']
             });
             
+            // שליחת תגובה עם הטוקן
             res.status(200).json({
                 status: 'success',
                 data: {
@@ -68,9 +78,7 @@ const userController = {
                         email: user.email,
                         role: user.role
                     },
-                    token,
-                    loginRecord,
-                    expiresIn: JWT_EXPIRES_IN // הוספת מידע על תפוגת הטוקן
+                    token
                 }
             });
         } catch (error) {
@@ -82,60 +90,106 @@ const userController = {
         }
     },
 
-    // אימות טוקן - עדכון להשתמש במשתנה הסביבה
-    authenticateToken: async (req, res, next) => {
-        try {
-            const authHeader = req.headers['authorization'];
-            const token = authHeader && authHeader.split(' ')[1];
+    // נמחק את authenticateToken כי הוא עבר ל-middleware
 
-            if (!token) {
-                return res.status(401).json({
-                    status: 'error',
-                    message: 'לא נמצא טוקן הזדהות'
+    // נמחק את isAdmin כי הוא עבר ל-middleware
+
+    createMyPersonalDetails: async (req, res) => {
+        try {
+            // בדיקת תקינות הבקשה
+            if (!req.body || Object.keys(req.body).length === 0) {
+                return res.status(400).json({
+                    status: "fail",
+                    message: "לא התקבלו פרטים לעדכון"
                 });
             }
 
-            jwt.verify(token, JWT_SECRET, (err, decoded) => {
-                if (err) {
-                    return res.status(403).json({
-                        status: 'error',
-                        message: 'טוקן לא תקין או פג תוקף'
-                    });
+            // שימוש ב-req.user שמגיע מה-middleware
+            const details = await User.findByIdAndUpdate(
+                req.user._id, // שימוש ב-_id במקום id
+                { personalDetails: req.body },
+                { 
+                    new: true, 
+                    runValidators: true 
                 }
-                req.user = decoded;
-                next();
-            });
-        } catch (error) {
-            console.error('Authentication error:', error);
-            res.status(500).json({
-                status: 'error',
-                message: 'שגיאת אימות'
-            });
-        }
-    },
+            );
 
-    // בדיקת הרשאות מנהל
-    isAdmin: async (req, res, next) => {
-        try {
-            if (!req.user || req.user.role !== 'admin') {
-                return res.status(403).json({
-                    status: 'error',
-                    message: 'אין הרשאות מתאימות'
+            if (!details) {
+                return res.status(404).json({
+                    status: "fail",
+                    message: "משתמש לא נמצא"
                 });
             }
-            next();
+
+            res.status(200).json({
+                status: "success",
+                data: details.personalDetails
+            });
+
         } catch (error) {
-            console.error('Admin check error:', error);
+            console.error('Error in createMyPersonalDetails:', error);
             res.status(500).json({
-                status: 'error',
-                message: 'שגיאה בבדיקת הרשאות'
+                status: "error",
+                message: "שגיאה בעדכון הפרטים",
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    },
+   
+    updateMyPersonalDetails: async (req, res) => {
+        try {
+            const details = await User.findByIdAndUpdate(
+                req.user._id,  // שימוש ב-_id מה-middleware
+                { personalDetails: req.body },
+                { new: true, runValidators: true }
+            );
+
+            if (!details) {
+                return res.status(404).json({
+                    status: "error",
+                    message: "משתמש לא נמצא"
+                });
+            }
+
+            res.status(200).json({ 
+                status: "success", 
+                data: details.personalDetails 
+            });
+        } catch (error) {
+            console.error('Update personal details error:', error);
+            res.status(400).json({ 
+                status: "fail", 
+                message: error.message 
             });
         }
     },
 
-    // קבלת כל המשתמשים
+    getMyPersonalDetails: async (req, res) => {
+        try {
+            const user = await User.findById(req.user._id);
+            if (!user || !user.personalDetails) {
+                return res.status(404).json({
+                    status: "error",
+                    message: "לא נמצאו פרטים אישיים"
+                });
+            }
+            res.status(200).json({ 
+                status: "success", 
+                data: user.personalDetails 
+            });
+        } catch (error) {
+            console.error('Get personal details error:', error);
+            res.status(400).json({ 
+                status: "fail", 
+                message: error.message 
+            });
+        }
+    },
+
+    // ניהול משתמשים - עכשיו מוגן על ידי middleware
     getUsers: async (req, res) => {
         try {
+            // בדיקת הרשאות admin כבר נעשית ב-middleware
             const users = await User.find().select('-password');
             res.status(200).json({
                 status: 'success',
@@ -150,10 +204,8 @@ const userController = {
         }
     },
 
-    // יצירת משתמש חדש
     createUser: async (req, res) => {
         try {
-            // בדיקת ולידציה
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
                 return res.status(400).json({
@@ -163,24 +215,12 @@ const userController = {
                 });
             }
 
-            const { username, email, password, role = 'user' } = req.body;
-
-            const existingUser = await User.findOne({
-                $or: [{ username }, { email }]
-            });
-
-            if (existingUser) {
-                return res.status(400).json({
-                    status: 'error',
-                    message: 'משתמש עם שם משתמש או אימייל זה כבר קיים'
-                });
-            }
-
-            const hashedPassword = await bcrypt.hash(password, 12);
-
+            // הגנה נוספת - רק admin יכול להגדיר תפקידים
+            const role = req.user.role === 'admin' ? req.body.role : 'user';
+            
+            const hashedPassword = await bcrypt.hash(req.body.password, 12);
             const newUser = await User.create({
-                username,
-                email,
+                ...req.body,
                 password: hashedPassword,
                 role
             });
@@ -205,31 +245,23 @@ const userController = {
         }
     },
 
-    // קבלת סטטיסטיקה
     getStatistic: async (req, res) => {
         try {
-            const totalUsers = await User.countDocuments();
-            const recentLogins = await Login.find()
-                .sort({ timestamp: -1 })
-                .limit(10)
-                .populate('user', 'username email');
-
-            const usersByRole = await User.aggregate([
-                {
-                    $group: {
-                        _id: '$role',
-                        count: { $sum: 1 }
-                    }
-                }
+            // בדיקת הרשאות admin כבר נעשית ב-middleware
+            const [totalUsers, recentLogins, usersByRole] = await Promise.all([
+                User.countDocuments(),
+                Login.find()
+                    .sort({ timestamp: -1 })
+                    .limit(10)
+                    .populate('user', 'username email'),
+                User.aggregate([
+                    { $group: { _id: '$role', count: { $sum: 1 } } }
+                ])
             ]);
 
             res.status(200).json({
                 status: 'success',
-                data: {
-                    totalUsers,
-                    recentLogins,
-                    usersByRole
-                }
+                data: { totalUsers, recentLogins, usersByRole }
             });
         } catch (error) {
             console.error('Get statistics error:', error);
@@ -240,23 +272,13 @@ const userController = {
         }
     },
 
-    // קבלת משתמש לפי ID
     getUserById: async (req, res) => {
         try {
             const user = await User.findById(req.params.id).select('-password');
-            
             if (!user) {
                 return res.status(404).json({
                     status: 'error',
                     message: 'משתמש לא נמצא'
-                });
-            }
-
-            // בדיקת הרשאות - רק מנהל או המשתמש עצמו יכולים לראות את הפרטים
-            if (req.user.role !== 'admin' && req.user.id !== user.id) {
-                return res.status(403).json({
-                    status: 'error',
-                    message: 'אין הרשאות לצפייה בפרטי המשתמש'
                 });
             }
 
@@ -273,29 +295,13 @@ const userController = {
         }
     },
 
-    // עדכון משתמש לפי ID
     updateUserById: async (req, res) => {
         try {
-            // בדיקת הרשאות - רק מנהל או המשתמש עצמו יכולים לעדכן
-            if (req.user.role !== 'admin' && req.user.id !== req.params.id) {
-                return res.status(403).json({
-                    status: 'error',
-                    message: 'אין הרשאות לעדכון המשתמש'
-                });
-            }
-
-            const { password, role, ...updateData } = req.body;
+            const { password, ...updateData } = req.body;
             
-            // רק מנהל יכול לשנות תפקיד
-            if (role && req.user.role !== 'admin') {
-                return res.status(403).json({
-                    status: 'error',
-                    message: 'אין הרשאות לשינוי תפקיד'
-                });
-            }
-
-            if (role) {
-                updateData.role = role;
+            // רק admin יכול לעדכן תפקידים
+            if (updateData.role && req.user.role !== 'admin') {
+                delete updateData.role;
             }
 
             if (password) {
@@ -328,19 +334,10 @@ const userController = {
         }
     },
 
-    // מחיקת משתמש לפי ID
     deleteUserById: async (req, res) => {
         try {
-            // רק מנהל יכול למחוק משתמשים
-            if (req.user.role !== 'admin') {
-                return res.status(403).json({
-                    status: 'error',
-                    message: 'אין הרשאות למחיקת משתמש'
-                });
-            }
-
+            // בדיקת הרשאות admin כבר נעשית ב-middleware
             const user = await User.findByIdAndDelete(req.params.id);
-            
             if (!user) {
                 return res.status(404).json({
                     status: 'error',
@@ -359,6 +356,71 @@ const userController = {
             res.status(500).json({
                 status: 'error',
                 message: 'שגיאה במחיקת משתמש'
+            });
+        }
+    },
+
+    logout: async (req, res) => {
+        try {
+            // נבצע פעולות נוספות אם נדרש (למשל, רישום ה-logout)
+            res.status(200).json({
+                status: 'success',
+                message: 'התנתקת בהצלחה'
+            });
+        } catch (error) {
+            console.error('Logout error:', error);
+            res.status(500).json({
+                status: 'error',
+                message: 'שגיאה בהתנתקות'
+            });
+        }
+    },
+
+    getProfile: async (req, res) => {
+        try {
+            const user = await User.findById(req.user._id).select('-password');
+            if (!user) {
+                return res.status(404).json({
+                    status: 'error',
+                    message: 'משתמש לא נמצא'
+                });
+            }
+            res.status(200).json({
+                status: 'success',
+                data: { user }
+            });
+        } catch (error) {
+            console.error('Get profile error:', error);
+            res.status(500).json({
+                status: 'error',
+                message: 'שגיאה בקבלת פרופיל'
+            });
+        }
+    },
+
+    updateProfile: async (req, res) => {
+        try {
+            const { password, role, ...updateData } = req.body;
+            
+            if (password) {
+                updateData.password = await bcrypt.hash(password, 12);
+            }
+
+            const user = await User.findByIdAndUpdate(
+                req.user._id,
+                updateData,
+                { new: true, runValidators: true }
+            ).select('-password');
+
+            res.status(200).json({
+                status: 'success',
+                data: { user }
+            });
+        } catch (error) {
+            console.error('Update profile error:', error);
+            res.status(500).json({
+                status: 'error',
+                message: 'שגיאה בעדכון פרופיל'
             });
         }
     }

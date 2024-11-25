@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
+import userService from '../services/UserService';
 
 function GymPersonalDetails() {
-  const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const navigate = useNavigate(); 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [formData, setFormData] = useState({
     age: '',
     height: '',
@@ -14,16 +18,7 @@ function GymPersonalDetails() {
     preferredTime: '',
     daysPerWeek: ''
   });
-
-  // בדיקת התחברות בטעינת הקומפוננטה
-  useEffect(() => {
-    const storedUsername = localStorage.getItem('username');
-    if (!storedUsername) {
-      navigate('/login');
-      return;
-    }
-    setUsername(storedUsername);
-  }, [navigate]);
+ 
 
   const trainingGoals = [
     'ירידה במשקל',
@@ -34,12 +29,48 @@ function GymPersonalDetails() {
     'תחזוקה כללית'
   ];
 
+  useEffect(() => {
+    const initializeData = async () => {
+      try {
+        // בדיקת התחברות
+        if (!authService.isAuthenticated()) {
+          navigate('/login');
+          return;
+        }
+
+        // נסיון לטעון נתונים קיימים
+        try {
+          const response = await userService.getMyPersonalDetails();
+          
+          if (response.data) {
+            setFormData(response.data);
+            setIsDataLoaded(true);
+            console.log('Loaded existing data:', response.data);
+          }
+        } catch (error) {
+          if (error.response?.status !== 404) {
+            console.error('Error loading data:', error);
+            setError('אירעה שגיאה בטעינת הנתונים');
+          }
+        }
+      } catch (error) {
+        console.error('Initialization error:', error);
+        setError('אירעה שגיאה בטעינת הנתונים');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeData();
+  }, [navigate]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    if (error) setError('');
   };
 
   const handleGoalChange = (goal) => {
@@ -53,21 +84,60 @@ function GymPersonalDetails() {
       };
     });
   };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // שמירת הנתונים ב-localStorage
-    const userData = {
-      ...formData,
-      username: username // שמירת שם המשתמש יחד עם שאר הנתונים
-    };
-    localStorage.setItem('gymUserData', JSON.stringify(userData));
-    
-    // ניווט לדשבורד עם הנתונים
-    navigate('/dashboard', { 
-      state: { formData: userData }
-    });
+    setLoading(true);
+    setError('');
+
+    try {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser) {
+        throw new Error('משתמש לא מחובר');
+      }
+
+      const personalDetails = {
+        ...formData,
+        username: currentUser.username
+      };
+
+      // שמירת/עדכון הנתונים בשרת
+      if (isDataLoaded) {
+        await userService.updateMyPersonalDetails(personalDetails);
+      } else {
+        await userService.createMyPersonalDetails(personalDetails);
+      }
+
+      // ניווט לדף ההמלצות
+      navigate('/gym-recommendation', {
+        state: { personalDetails }
+      });
+    } catch (error) {
+      console.error('Error saving details:', error);
+      
+      if (error.response?.status === 401) {
+        authService.logout();
+        navigate('/login');
+        return;
+      }
+
+      setError(error.response?.data?.message || 'אירעה שגיאה בשמירת הנתונים');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="spinner-border text-blue-500" role="status">
+            {/* Add your loading spinner here */}
+          </div>
+          <p className="mt-2">טוען נתונים...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
@@ -75,15 +145,21 @@ function GymPersonalDetails() {
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-sm p-6">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-center text-gray-800">
-              שלום {username}, הזן את פרטיך האישיים
+              {isDataLoaded ? 'עדכון פרטים אישיים' : 'הזן את פרטיך האישיים'}
             </h2>
             <p className="text-center text-gray-600 mt-2">
-              המידע הזה יעזור לנו להתאים את התוכנית עבורך
+              {isDataLoaded 
+                ? 'כאן תוכל לעדכן את פרטיך האישיים'
+                : 'המידע הזה יעזור לנו להתאים את התוכנית עבורך'}
             </p>
           </div>
 
+          {error && (
+            <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* שורה ראשונה - גיל, גובה ומשקל */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -98,9 +174,10 @@ function GymPersonalDetails() {
                   required
                   min="16"
                   max="120"
+                  disabled={loading}
                 />
               </div>
-
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   גובה (בס"מ)
@@ -112,8 +189,9 @@ function GymPersonalDetails() {
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   required
-                  min="120"
+                  min="100"
                   max="250"
+                  disabled={loading}
                 />
               </div>
 
@@ -130,14 +208,14 @@ function GymPersonalDetails() {
                   required
                   min="30"
                   max="300"
+                  disabled={loading}
                 />
               </div>
             </div>
 
-            {/* ניסיון באימונים */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                ניסיון באימונים
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                רמת ניסיון
               </label>
               <select
                 name="experience"
@@ -145,26 +223,29 @@ function GymPersonalDetails() {
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 required
+                disabled={loading}
               >
-                <option value="מתחיל">מתחיל - אין ניסיון קודם</option>
-                <option value="מתחיל מתקדם">מתחיל מתקדם - עד שנה של ניסיון</option>
-                <option value="מתאמן">מתאמן - 1-3 שנות ניסיון</option>
-                <option value="מתקדם">מתקדם - מעל 3 שנות ניסיון</option>
+                <option value="מתחיל">מתחיל</option>
+                <option value="מתקדם">מתקדם</option>
+                <option value="מקצועי">מקצועי</option>
               </select>
             </div>
 
-            {/* מטרות אימון */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 מטרות אימון (ניתן לבחור מספר אפשרויות)
               </label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {trainingGoals.map((goal) => (
-                  <label key={goal} className="flex items-center space-x-2 space-x-reverse">
+                  <label
+                    key={goal}
+                    className="flex items-center space-x-2 space-x-reverse"
+                  >
                     <input
                       type="checkbox"
                       checked={formData.goals.includes(goal)}
                       onChange={() => handleGoalChange(goal)}
+                      disabled={loading}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="text-sm text-gray-700">{goal}</span>
@@ -173,7 +254,6 @@ function GymPersonalDetails() {
               </div>
             </div>
 
-            {/* מצב רפואי */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 מצב רפואי (אופציונלי)
@@ -182,15 +262,15 @@ function GymPersonalDetails() {
                 name="medicalConditions"
                 value={formData.medicalConditions}
                 onChange={handleChange}
-                placeholder="פרט/י האם יש מגבלות רפואיות שחשוב שנדע עליהן"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 h-24"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                rows="3"
+                placeholder="פרט מצבים רפואיים שיש לקחת בחשבון"
+                disabled={loading}
               />
             </div>
-
-            {/* זמני אימון מועדפים */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                שעות אימון מועדפות
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                זמן מועדף לאימון
               </label>
               <select
                 name="preferredTime"
@@ -198,20 +278,19 @@ function GymPersonalDetails() {
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 required
+                disabled={loading}
               >
-                <option value="">בחר/י זמן מועדף</option>
-                <option value="בוקר מוקדם">בוקר מוקדם (05:00-08:00)</option>
-                <option value="בוקר">בוקר (08:00-12:00)</option>
-                <option value="צהריים">צהריים (12:00-16:00)</option>
-                <option value="אחר הצהריים">אחר הצהריים (16:00-20:00)</option>
-                <option value="ערב">ערב (20:00-23:00)</option>
+                <option value="">בחר זמן מועדף</option>
+                <option value="בוקר">בוקר</option>
+                <option value="צהריים">צהריים</option>
+                <option value="ערב">ערב</option>
+                <option value="לילה">לילה</option>
               </select>
             </div>
 
-            {/* מספר אימונים בשבוע */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                כמה פעמים בשבוע את/ה מתכנן/ת להתאמן?
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                מספר ימי אימון בשבוע
               </label>
               <select
                 name="daysPerWeek"
@@ -219,22 +298,52 @@ function GymPersonalDetails() {
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 required
+                disabled={loading}
               >
-                <option value="">בחר/י מספר אימונים</option>
-                <option value="1-2">1-2 פעמים בשבוע</option>
-                <option value="3-4">3-4 פעמים בשבוע</option>
-                <option value="5-6">5-6 פעמים בשבוע</option>
-                <option value="7">כל יום</option>
+                <option value="">בחר מספר ימים</option>
+                {[1, 2, 3, 4, 5, 6, 7].map(num => (
+                  <option key={num} value={num}>{num}</option>
+                ))}
               </select>
             </div>
 
-            {/* כפתור שליחה */}
             <div className="mt-6">
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition duration-200"
+                disabled={loading}
+                className={`w-full flex justify-center items-center ${
+                  loading 
+                    ? 'bg-blue-400 cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700'
+                } text-white font-medium py-3 px-4 rounded-md transition duration-200`}
               >
-                שמור והמשך
+                {loading ? (
+                  <>
+                    <svg 
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24"
+                    >
+                      <circle 
+                        className="opacity-25" 
+                        cx="12" 
+                        cy="12" 
+                        r="10" 
+                        stroke="currentColor" 
+                        strokeWidth="4"
+                      />
+                      <path 
+                        className="opacity-75" 
+                        fill="currentColor" 
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    {isDataLoaded ? 'מעדכן...' : 'שומר...'}
+                  </>
+                ) : (
+                  isDataLoaded ? 'עדכן והמשך' : 'שמור והמשך'
+                )}
               </button>
             </div>
           </form>

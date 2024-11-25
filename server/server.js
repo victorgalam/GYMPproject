@@ -23,7 +23,7 @@ app.use((req, res, next) => {
 
 // Routes
 const userRouter = require('./api/User/UserRoute');
-app.use('/api/v1/users', userRouter);
+app.use('/api/users', userRouter);
 
 // MongoDB connection
 const OPT = {
@@ -38,7 +38,7 @@ mongoose.connect(process.env.MONGODB_URI, OPT)
 // Error handling - כולל טיפול בשגיאות JWT
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    
+
     // טיפול בשגיאות JWT
     if (err.name === 'JsonWebTokenError') {
         return res.status(401).json({
