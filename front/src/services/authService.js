@@ -5,7 +5,7 @@ const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user';
 
 // יצירת instance של axios עם הגדרות בסיסיות
-const api = axios.create({
+export const api = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json'
@@ -179,4 +179,4 @@ const authService = {
     }
 };
 
-export { authService, api };
+export { authService, api as axiosInstance };

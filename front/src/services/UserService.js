@@ -1,18 +1,8 @@
 // UserService.js
 
 import axios from 'axios';
+import { axiosInstance } from './authService';
 
-// הגדרת כתובת בסיס לשרת
-const API_URL = 'http://localhost:3000/api/users';
-
-// יצירת מופע axios עם הגדרות בסיסיות
-export const axiosInstance = axios.create({
-   baseURL: API_URL,
-   withCredentials: true, // מאפשר שליחת cookies
-   headers: {
-       'Content-Type': 'application/json'
-   }
-});
 
 const userService = {
    // הרשמת משתמש חדש למערכת
