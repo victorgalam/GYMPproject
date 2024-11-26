@@ -35,9 +35,10 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/gym-details" element={<GymPersonalDetails />} />
+          <Route path="/recommendations" element={<GymRecommendations />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/personal-details" element={<GymPersonalDetails />} />
+          
 
           </Routes>
       </div>

@@ -1,12 +1,11 @@
-// src/services/authService.js
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api/v1';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api/users';
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user';
 
 // יצירת instance של axios עם הגדרות בסיסיות
-const api = axios.create({
+export const api = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json'
@@ -15,95 +14,169 @@ const api = axios.create({
 });
 
 // הוספת interceptors
-api.interceptors.request.use(config => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
-
 api.interceptors.response.use(
-    response => response,
-    error => {
-        if (error.response?.status === 401) {
-            localStorage.removeItem(TOKEN_KEY);
-            localStorage.removeItem(USER_KEY);
-            window.location.href = '/login';
+    (response) => {
+        // המרת תגובה מוצלחת לפורמט אחיד
+        if (response.data) {
+            return {
+                status: 'success',
+                data: response.data.data || response.data,
+                message: response.data.message
+            };
         }
-        return Promise.reject(error);
+        return response;
+    },
+    (error) => {
+        // המרת שגיאות לפורמט אחיד
+        if (error.response) {
+            // השרת החזיר תשובה עם קוד שגיאה
+            const errorResponse = {
+                status: 'error',
+                code: error.response.data?.code || 'SERVER_ERROR',
+                message: error.response.data?.message || 'שגיאת שרת',
+                details: error.response.data?.details || {}
+            };
+
+            if (error.response.status === 401) {
+                // טיפול בשגיאת אימות
+                localStorage.removeItem(TOKEN_KEY);
+                localStorage.removeItem(USER_KEY);
+                window.location.replace('/login');
+            }
+
+            return Promise.reject(errorResponse);
+        } else if (error.request) {
+            // הבקשה נשלחה אך לא התקבלה תשובה
+            return Promise.reject({
+                status: 'error',
+                code: 'NETWORK_ERROR',
+                message: 'בעיית תקשורת עם השרת'
+            });
+        }
+        
+        // שגיאה בהגדרת הבקשה
+        return Promise.reject({
+            status: 'error',
+            code: 'REQUEST_ERROR',
+            message: error.message || 'שגיאה בשליחת הבקשה'
+        });
     }
 );
 
 const authService = {
-    // הרשמה
     register: async (userData) => {
         try {
-            console.log('Registering user:', userData);
-            const response = await api.post('/users', userData);
+            console.log({userData});
             
-            if (response.data.status === 'success') {
-                if (response.data.token) {
-                    localStorage.setItem(TOKEN_KEY, response.data.token);
+            const response = await api.post('/register', userData);
+            
+            if (response.status === 'success' && response.data) {
+                const { token, user } = response.data;
+                
+                if (token) {
+                    localStorage.setItem(TOKEN_KEY, token);
                 }
-                localStorage.setItem(USER_KEY, JSON.stringify(response.data.data));
+                if (user) {
+                    localStorage.setItem(USER_KEY, JSON.stringify(user));
+                }
             }
             
-            return response.data;
+            return response;
         } catch (error) {
-            console.error('Registration error:', error.response?.data || error);
-            throw error.response?.data || error;
+            console.error('Registration service error:', error);
+            throw error; // זורק את השגיאה המעובדת מה-interceptor
         }
     },
 
     // התחברות
     login: async (credentials) => {
         try {
-            console.log('Login attempt:', credentials);
-            const response = await api.post('/users/login', credentials);
+            const response = await api.post('/login', credentials);
             
-            if (response.data.status === 'success') {
-                if (response.data.token) {
-                    localStorage.setItem(TOKEN_KEY, response.data.token);
+            
+            if (response.status === 'success') {
+                const { token, user } = response.data;
+                
+                
+                if (token) {
+                    localStorage.setItem(TOKEN_KEY, token);
                 }
-                localStorage.setItem(USER_KEY, JSON.stringify(response.data.data.user));
+                if (user) {
+                    localStorage.setItem(USER_KEY, JSON.stringify(user));
+                }
+
+                return {
+                    status: 'success',
+                    data: user
+                };
             }
             
-            return response.data;
+            throw new Error('תגובת שרת לא תקינה');
+            
         } catch (error) {
-            console.error('Login error:', error.response?.data || error);
-            throw error.response?.data || error;
+            // טיפול בשגיאות ספציפיות
+            if (error.response?.status === 401) {
+                throw {
+                    status: 'error',
+                    code: 'INVALID_CREDENTIALS',
+                    message: 'שם משתמש או סיסמה שגויים'
+                };
+            }
+
+            // שגיאה כללית
+            throw {
+                status: 'error',
+                code: error.code || 'LOGIN_FAILED',
+                message: error.message || 'שגיאה בתהליך ההתחברות',
+                details: error.response?.data || error
+            };
         }
     },
 
     // התנתקות
-    logout: () => {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
-        window.location.href = '/login';
+    logout: async () => {
+        try {
+            // ניסיון לשלוח בקשת logout לשרת
+            await api.post('/auth/logout');
+        } catch (error) {
+            console.warn('Logout request failed:', error);
+        } finally {
+            // ניקוי מידע מקומי בכל מקרה
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(USER_KEY);
+            // ניווט לדף ההתחברות
+            window.location.replace('/login');
+        }
     },
 
     // בדיקה אם המשתמש מחובר
     isAuthenticated: () => {
-        return !!localStorage.getItem(TOKEN_KEY);
+        const token = localStorage.getItem(TOKEN_KEY);
+        const user = localStorage.getItem(USER_KEY);
+        return !!(token && user);
     },
 
     // קבלת המשתמש הנוכחי
     getCurrentUser: () => {
-        const userStr = localStorage.getItem(USER_KEY);
-        return userStr ? JSON.parse(userStr) : null;
+        try {
+            const userStr = localStorage.getItem(USER_KEY);
+            return userStr ? JSON.parse(userStr) : null;
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            // במקרה של שגיאה, ננקה את המידע המקומי
+            localStorage.removeItem(USER_KEY);
+            return null;
+        }
     },
 
     // קבלת הטוקן
-    getToken: () => {
-        return localStorage.getItem(TOKEN_KEY);
-    },
+    getToken: () => localStorage.getItem(TOKEN_KEY),
 
     // קבלת headers לבקשות
     getAuthHeaders: () => {
         const token = localStorage.getItem(TOKEN_KEY);
-        return token ? { 'Authorization': `Bearer ${token}` } : {};
+        return token ? { Authorization: `Bearer ${token}` } : {};
     }
 };
 
-export { authService, api };
+export { authService, api as axiosInstance };
