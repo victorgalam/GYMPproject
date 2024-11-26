@@ -22,6 +22,9 @@ function UserLogin() {
                 const user = authService.getCurrentUser();
                 console.log('Login successful:', user);
 
+                // במקום לשמור ב-sessionStorage, נסתמך רק על ה-authService
+                // sessionStorage.setItem('username', username); - לא צריך יותר
+
                 // ניתוב בהתאם לתפקיד המשתמש
                 if (user.role === 'admin') {
                     navigate('/admin/dashboard');
@@ -31,7 +34,6 @@ function UserLogin() {
             }
         } catch (error) {
             console.error('Login error:', error);
-            setError(error.message || 'שגיאה בהתחברות. אנא נסה שוב.');
             
             // טיפול בשגיאות ספציפיות
             if (error.status === 'error' && error.message) {
@@ -40,6 +42,8 @@ function UserLogin() {
                 setError('שם משתמש או סיסמה לא נכונים');
             } else if (error.response?.status === 429) {
                 setError('יותר מדי ניסיונות התחברות. אנא נסה שוב מאוחר יותר');
+            } else {
+                setError(error.message || 'שגיאה בהתחברות. אנא נסה שוב.');
             }
         } finally {
             setIsLoading(false);

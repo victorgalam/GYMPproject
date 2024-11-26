@@ -13,6 +13,11 @@ export const api = axios.create({
     withCredentials: true
 });
 
+// פונקציה להודעה על שינוי במצב ההתחברות
+const notifyAuthChange = () => {
+    window.dispatchEvent(new Event('auth-change'));
+};
+
 // הוספת interceptors
 api.interceptors.response.use(
     (response) => {
@@ -41,6 +46,7 @@ api.interceptors.response.use(
                 // טיפול בשגיאת אימות
                 localStorage.removeItem(TOKEN_KEY);
                 localStorage.removeItem(USER_KEY);
+                notifyAuthChange(); // הודעה על שינוי בהתחברות
                 window.location.replace('/login');
             }
 
@@ -79,12 +85,13 @@ const authService = {
                 if (user) {
                     localStorage.setItem(USER_KEY, JSON.stringify(user));
                 }
+                notifyAuthChange(); // הודעה על שינוי בהתחברות
             }
             
             return response;
         } catch (error) {
             console.error('Registration service error:', error);
-            throw error; // זורק את השגיאה המעובדת מה-interceptor
+            throw error;
         }
     },
 
@@ -93,10 +100,8 @@ const authService = {
         try {
             const response = await api.post('/login', credentials);
             
-            
             if (response.status === 'success') {
                 const { token, user } = response.data;
-                
                 
                 if (token) {
                     localStorage.setItem(TOKEN_KEY, token);
@@ -104,6 +109,7 @@ const authService = {
                 if (user) {
                     localStorage.setItem(USER_KEY, JSON.stringify(user));
                 }
+                notifyAuthChange(); // הודעה על שינוי בהתחברות
 
                 return {
                     status: 'success',
@@ -114,7 +120,6 @@ const authService = {
             throw new Error('תגובת שרת לא תקינה');
             
         } catch (error) {
-            // טיפול בשגיאות ספציפיות
             if (error.response?.status === 401) {
                 throw {
                     status: 'error',
@@ -123,7 +128,6 @@ const authService = {
                 };
             }
 
-            // שגיאה כללית
             throw {
                 status: 'error',
                 code: error.code || 'LOGIN_FAILED',
@@ -136,15 +140,13 @@ const authService = {
     // התנתקות
     logout: async () => {
         try {
-            // ניסיון לשלוח בקשת logout לשרת
             await api.post('/auth/logout');
         } catch (error) {
             console.warn('Logout request failed:', error);
         } finally {
-            // ניקוי מידע מקומי בכל מקרה
             localStorage.removeItem(TOKEN_KEY);
             localStorage.removeItem(USER_KEY);
-            // ניווט לדף ההתחברות
+            notifyAuthChange(); // הודעה על שינוי בהתחברות
             window.location.replace('/login');
         }
     },
@@ -163,8 +165,8 @@ const authService = {
             return userStr ? JSON.parse(userStr) : null;
         } catch (error) {
             console.error('Error parsing user data:', error);
-            // במקרה של שגיאה, ננקה את המידע המקומי
             localStorage.removeItem(USER_KEY);
+            notifyAuthChange(); // הודעה על שינוי בהתחברות במקרה של שגיאה
             return null;
         }
     },

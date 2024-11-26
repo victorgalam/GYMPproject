@@ -1,7 +1,81 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { UserCircle, LogOut } from 'lucide-react';
+import { authService } from '../services/authService';
 
 const LandingPage = () => {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // פונקציה לבדיקת סטטוס המשתמש
+    const checkAuthStatus = () => {
+      const currentUser = authService.getCurrentUser();
+      console.log('Current user from authService:', currentUser);
+      setUser(currentUser);
+    };
+
+    // בדיקה ראשונית
+    checkAuthStatus();
+
+    // הוספת מאזין לשינויים ב-localStorage
+    const handleStorageChange = (e) => {
+      if (e.key === 'user' || e.key === 'auth_token') {
+        checkAuthStatus();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // מאזין מיוחד לשינויים פנימיים
+    window.addEventListener('auth-change', checkAuthStatus);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth-change', checkAuthStatus);
+    };
+  }, []);
+
+  // Debug: בדיקת מצב הסטייט
+  useEffect(() => {
+    console.log('Current user state:', user);
+  }, [user]);
+
+  const handleLogout = () => {
+    authService.logout();
+    setUser(null);
+  };
+
+  // רנדור של תפריט למשתמש מחובר
+  const LoggedInMenu = () => (
+    <div className="flex items-center space-x-4 space-x-reverse">
+      <div className="flex items-center">
+        <UserCircle className="w-6 h-6 text-gray-600" />
+        <span className="mr-2 text-gray-600">{user?.username || user?.name || 'משתמש'}</span>
+      </div>
+      <Link to="/dashboard" className="px-4 py-2 text-gray-600 hover:text-gray-900 transition duration-200">
+        אזור אישי
+      </Link>
+      <button
+        onClick={handleLogout}
+        className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 transition duration-200"
+      >
+        <LogOut className="w-5 h-5 ml-2" />
+        התנתק
+      </button>
+    </div>
+  );
+
+  // רנדור של תפריט למשתמש לא מחובר
+  const GuestMenu = () => (
+    <div className="flex items-center space-x-4 space-x-reverse">
+      <Link to="/login" className="px-4 py-2 text-gray-600 hover:text-gray-900 transition duration-200">
+        התחברות
+      </Link>
+      <Link to="/register" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200">
+        הרשמה
+      </Link>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Navbar */}
@@ -9,34 +83,46 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <span className="text-2xl font-bold text-blue-600">GYM</span>
-            <div className="flex items-center space-x-4 space-x-reverse">
-              <Link to="/login" className="px-4 py-2 text-gray-600 hover:text-gray-900 transition duration-200">
-                התחברות
-              </Link>
-              <Link to="/register" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200">
-                הרשמה
-              </Link>
-            </div>
+            {user ? <LoggedInMenu /> : <GuestMenu />}
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero Section - שונה בהתאם למצב המשתמש */}
       <section className="pt-24 pb-12 px-4 bg-gradient-to-b from-blue-50 to-white">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between">
           <div className="lg:w-1/2 text-center lg:text-right">
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-              הדרך שלך להצלחה מתחילה כאן
-            </h1>
-            <p className="text-xl text-gray-600 mb-8">
-              מערכת מתקדמת למעקב אחר אימונים, תזונה והתקדמות אישית
-            </p>
-            <Link 
-              to="/register" 
-              className="inline-block px-8 py-4 bg-blue-600 text-white rounded-lg text-lg font-semibold hover:bg-blue-700 transition duration-200"
-            >
-              התחל להתאמן עכשיו
-            </Link>
+            {user ? (
+              <>
+                <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+                  ברוך הבא בחזרה, {user?.username || user?.name || 'משתמש'}!
+                </h1>
+                <p className="text-xl text-gray-600 mb-8">
+                  המשך את המסע שלך לעבר המטרות שלך
+                </p>
+                <Link 
+                  to="/dashboard" 
+                  className="inline-block px-8 py-4 bg-blue-600 text-white rounded-lg text-lg font-semibold hover:bg-blue-700 transition duration-200"
+                >
+                  המשך לאזור האישי
+                </Link>
+              </>
+            ) : (
+              <>
+                <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+                  הדרך שלך להצלחה מתחילה כאן
+                </h1>
+                <p className="text-xl text-gray-600 mb-8">
+                  מערכת מתקדמת למעקב אחר אימונים, תזונה והתקדמות אישית
+                </p>
+                <Link 
+                  to="/register" 
+                  className="inline-block px-8 py-4 bg-blue-600 text-white rounded-lg text-lg font-semibold hover:bg-blue-700 transition duration-200"
+                >
+                  התחל להתאמן עכשיו
+                </Link>
+              </>
+            )}
           </div>
           <div className="lg:w-1/2 mt-12 lg:mt-0">
             <img 
@@ -86,23 +172,25 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 px-4 bg-blue-600">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-white mb-6">
-            מוכנים להתחיל את המסע שלכם?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8">
-            הצטרפו עכשיו וקבלו חודש ראשון חינם!
-          </p>
-          <Link 
-            to="/register" 
-            className="inline-block px-8 py-4 bg-white text-blue-600 rounded-lg text-lg font-semibold hover:bg-gray-100 transition duration-200"
-          >
-            הצטרפו עכשיו
-          </Link>
-        </div>
-      </section>
+      {/* CTA Section - מוצג רק למשתמשים לא מחוברים */}
+      {!user && (
+        <section className="py-16 px-4 bg-blue-600">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl font-bold text-white mb-6">
+              מוכנים להתחיל את המסע שלכם?
+            </h2>
+            <p className="text-xl text-blue-100 mb-8">
+              הצטרפו עכשיו וקבלו חודש ראשון חינם!
+            </p>
+            <Link 
+              to="/register" 
+              className="inline-block px-8 py-4 bg-white text-blue-600 rounded-lg text-lg font-semibold hover:bg-gray-100 transition duration-200"
+            >
+              הצטרפו עכשיו
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="bg-gray-800 text-white py-12">
