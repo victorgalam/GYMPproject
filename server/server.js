@@ -23,7 +23,10 @@ app.use((req, res, next) => {
 
 // Routes
 const userRouter = require('./api/User/UserRoute');
+const personalDetailsRouter = require('./api/PersonalDetails/PersonalDetailsRoute');
+
 app.use('/api/users', userRouter);
+app.use('/api/personal-details', personalDetailsRouter);
 
 // MongoDB connection
 const OPT = {

@@ -96,8 +96,13 @@ const userController = {
 
     createMyPersonalDetails: async (req, res) => {
         try {
+            console.log('Starting createMyPersonalDetails');
+            console.log('Request body:', req.body);
+            console.log('User from middleware:', req.user);
+
             // בדיקת תקינות הבקשה
             if (!req.body || Object.keys(req.body).length === 0) {
+                console.log('No data received in request body');
                 return res.status(400).json({
                     status: "fail",
                     message: "לא התקבלו פרטים לעדכון"
@@ -105,8 +110,9 @@ const userController = {
             }
 
             // שימוש ב-req.user שמגיע מה-middleware
+            console.log('Attempting to update user with ID:', req.user._id);
             const details = await User.findByIdAndUpdate(
-                req.user._id, // שימוש ב-_id במקום id
+                req.user._id,
                 { personalDetails: req.body },
                 { 
                     new: true, 
@@ -114,20 +120,29 @@ const userController = {
                 }
             );
 
+            console.log('Update result:', details);
+
             if (!details) {
+                console.log('User not found after update');
                 return res.status(404).json({
                     status: "fail",
                     message: "משתמש לא נמצא"
                 });
             }
 
+            console.log('Successfully updated personal details');
             res.status(200).json({
                 status: "success",
                 data: details.personalDetails
             });
 
         } catch (error) {
-            console.error('Error in createMyPersonalDetails:', error);
+            console.error('Detailed error in createMyPersonalDetails:', {
+                error: error.message,
+                stack: error.stack,
+                user: req?.user,
+                body: req?.body
+            });
             res.status(500).json({
                 status: "error",
                 message: "שגיאה בעדכון הפרטים",
@@ -139,7 +154,7 @@ const userController = {
     updateMyPersonalDetails: async (req, res) => {
         try {
             const details = await User.findByIdAndUpdate(
-                req.user._id,  // שימוש ב-_id מה-middleware
+                req.user._id,
                 { personalDetails: req.body },
                 { new: true, runValidators: true }
             );
@@ -423,7 +438,44 @@ const userController = {
                 message: 'שגיאה בעדכון פרופיל'
             });
         }
-    }
+    },
+
+    // קבלת כל הנתונים של המשתמש המחובר
+    getMyData: async (req, res) => {
+        try {
+            console.log('Getting user data for:', req.user._id);
+            const user = await User.findById(req.user._id);
+            
+            if (!user) {
+                return res.status(404).json({
+                    status: "fail",
+                    message: "משתמש לא נמצא"
+                });
+            }
+
+            console.log('User data:', {
+                id: user._id,
+                username: user.username,
+                personalDetails: user.personalDetails
+            });
+
+            res.status(200).json({
+                status: "success",
+                data: {
+                    id: user._id,
+                    username: user.username,
+                    email: user.email,
+                    personalDetails: user.personalDetails
+                }
+            });
+        } catch (error) {
+            console.error('Error in getMyData:', error);
+            res.status(500).json({
+                status: "error",
+                message: "שגיאה בקבלת נתוני המשתמש"
+            });
+        }
+    },
 };
 
 module.exports = userController;

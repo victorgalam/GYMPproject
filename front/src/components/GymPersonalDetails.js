@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
-import userService from '../services/UserService';
+import {userService} from '../services/UserService';
 
 function GymPersonalDetails() {
   const navigate = useNavigate(); 
@@ -84,6 +84,7 @@ function GymPersonalDetails() {
       };
     });
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -92,35 +93,36 @@ function GymPersonalDetails() {
     try {
       const currentUser = authService.getCurrentUser();
       if (!currentUser) {
-        throw new Error('משתמש לא מחובר');
-      }
-
-      const personalDetails = {
-        ...formData,
-        username: currentUser.username
-      };
-
-      // שמירת/עדכון הנתונים בשרת
-      if (isDataLoaded) {
-        await userService.updateMyPersonalDetails(personalDetails);
-      } else {
-        await userService.createMyPersonalDetails(personalDetails);
-      }
-
-      // ניווט לדף ההמלצות
-      navigate('/gym-recommendation', {
-        state: { personalDetails }
-      });
-    } catch (error) {
-      console.error('Error saving details:', error);
-      
-      if (error.response?.status === 401) {
-        authService.logout();
         navigate('/login');
         return;
       }
 
-      setError(error.response?.data?.message || 'אירעה שגיאה בשמירת הנתונים');
+      const token = authService.getToken();
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      // נסיון לשמור את הנתונים
+      try {
+        let response;
+        if (isDataLoaded) {
+          // עדכון נתונים קיימים
+          response = await userService.updateMyPersonalDetails(formData);
+        } else {
+          // יצירת נתונים חדשים
+          response = await userService.createMyPersonalDetails(formData);
+        }
+        
+        console.log('Data saved successfully:', response);
+        navigate('/dashboard'); // או כל דף אחר שתרצה לנווט אליו
+      } catch (error) {
+        console.error('Error saving data:', error);
+        setError(error.response?.data?.message || 'אירעה שגיאה בשמירת הנתונים');
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
+      setError('אירעה שגיאה בשמירת הנתונים');
     } finally {
       setLoading(false);
     }

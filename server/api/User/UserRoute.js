@@ -17,21 +17,22 @@ router.post('/register', userController.createRegister);
 router.post('/login', userController.login);
 router.post('/logout', userController.logout);
 
-// נתיבי משתמש
-router.get('/', userController.getUsers);
-router.post('/', userController.createUser);
-router.get('/get/statistic', userController.getStatistic);
-router.get('/:id', userController.getUserById);
-router.patch('/:id', userController.updateUserById);
-router.delete('/:id', userController.deleteUserById);
-
-// נתיבים לפרטים אישיים
-router.post('/me/personal-details', userController.createMyPersonalDetails);
-router.put('/me/personal-details', userController.updateMyPersonalDetails);
-router.get('/me/personal-details', userController.getMyPersonalDetails);
+// נתיבי פרטים אישיים - מוגנים
+router.post('/me/personal-details', protect, userController.createMyPersonalDetails);
+router.put('/me/personal-details', protect, userController.updateMyPersonalDetails);
+router.get('/me/personal-details', protect, userController.getMyPersonalDetails);
 
 // נתיבי פרופיל משתמש
-router.get('/me', userController.getProfile);
-router.put('/me', userController.updateProfile);
+router.get('/me', protect, userController.getProfile);
+router.get('/me/data', protect, userController.getMyData);  // נתיב חדש לקבלת כל הנתונים
+router.put('/me', protect, userController.updateProfile);
+
+// נתיבי משתמש כלליים
+router.get('/', protect, userController.getUsers);
+router.post('/', protect, userController.createUser);
+router.get('/get/statistic', protect, userController.getStatistic);
+router.get('/:id', protect, userController.getUserById);
+router.patch('/:id', protect, userController.updateUserById);
+router.delete('/:id', protect, userController.deleteUserById);
 
 module.exports = router;

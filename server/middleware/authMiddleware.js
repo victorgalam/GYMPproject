@@ -1,6 +1,6 @@
 // middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
-const User = require('../api/User/UserModel'); // התאם את הנתיב למודל שלך
+const { User } = require('../api/User/UserModel'); // התאם את הנתיב למודל שלך
 
 exports.protect = async (req, res, next) => {
     try {
@@ -31,29 +31,37 @@ exports.protect = async (req, res, next) => {
             if (!currentUser) {
                 return res.status(401).json({
                     status: 'fail',
-                    message: 'המשתמש לא קיים במערכת'
+                    message: 'המשתמש לא קיים יותר במערכת'
                 });
             }
 
             // הוספת המשתמש לבקשה
             req.user = currentUser;
             next();
-
         } catch (error) {
             return res.status(401).json({
                 status: 'fail',
                 message: 'טוקן לא תקין או פג תוקף'
             });
         }
-
     } catch (error) {
-        console.error('Auth Error:', error);
+        console.error('Auth middleware error:', error);
         return res.status(500).json({
             status: 'error',
-            message: 'שגיאה בתהליך האימות'
+            message: 'שגיאת שרת פנימית'
         });
     }
 };
 
-
-
+// Middleware להגבלת גישה לפי תפקיד
+exports.restrictTo = (...roles) => {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            return res.status(403).json({
+                status: 'fail',
+                message: 'אין לך הרשאה לבצע פעולה זו'
+            });
+        }
+        next();
+    };
+};

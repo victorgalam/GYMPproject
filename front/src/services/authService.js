@@ -18,6 +18,20 @@ const notifyAuthChange = () => {
     window.dispatchEvent(new Event('auth-change'));
 };
 
+// הוספת interceptor לבקשות - להוספת טוקן
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
 // הוספת interceptors
 api.interceptors.response.use(
     (response) => {

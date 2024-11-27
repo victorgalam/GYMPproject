@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
-
+import { userService } from '../services/UserService';
 function UserLogin() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -22,14 +22,31 @@ function UserLogin() {
                 const user = authService.getCurrentUser();
                 console.log('Login successful:', user);
 
-                // במקום לשמור ב-sessionStorage, נסתמך רק על ה-authService
-                // sessionStorage.setItem('username', username); - לא צריך יותר
-
-                // ניתוב בהתאם לתפקיד המשתמש
+                // Check if user is admin
                 if (user.role === 'admin') {
                     navigate('/admin/dashboard');
-                } else {
-                    navigate('/dashboard');
+                    return;
+                }
+
+                try {
+                    // Check if user has personal details (only for regular users)
+                    const personalDetailsResponse = await userService.getMyPersonalDetails();
+                    
+                    if (!personalDetailsResponse.data) {
+                        // No personal details - redirect to personal details page
+                        navigate('/personal-details');
+                    } else {
+                        // Has personal details - redirect to dashboard
+                        navigate('/dashboard');
+                    }
+                } catch (error) {
+                    if (error.response?.status === 404) {
+                        // 404 means no personal details found
+                        navigate('/personal-details');
+                    } else {
+                        console.error('Error checking personal details:', error);
+                        navigate('/dashboard'); // Default to dashboard if check fails
+                    }
                 }
             }
         } catch (error) {
