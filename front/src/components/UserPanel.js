@@ -8,13 +8,6 @@ const Home = () => {
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('general');
   
-  // State לנתונים מה-DB
-  const [progressData, setProgressData] = useState({
-    strength: 0,
-    endurance: 0,
-    flexibility: 0
-  });
-
   const [workoutPlan, setWorkoutPlan] = useState([
     { day: "ראשון", workouts: [] },
     { day: "שני", workouts: [] },
@@ -26,27 +19,13 @@ const Home = () => {
   ]);
 
   useEffect(() => {
-    fetchProgress();
     fetchWorkoutPlan();
   }, []);
-
-  // פונקציה לטעינת התקדמות המשתמש
-  const fetchProgress = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/user/progress`);
-      const data = await response.json();
-      if (data.success) {
-        setProgressData(data.progress);
-      }
-    } catch (error) {
-      console.error('Error fetching progress:', error);
-    }
-  };
 
   // פונקציה לטעינת תוכנית האימונים
   const fetchWorkoutPlan = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user/workouts`);
+      const response = await fetch(`${API_BASE_URL}/api/workouts/my`);
       const data = await response.json();
       if (data.success) {
         setWorkoutPlan(data.workouts);
@@ -141,31 +120,6 @@ const Home = () => {
 
       {selectedTab === 'general' ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* תרשים התקדמות */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">התקדמות</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="text-gray-600">כוח</label>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progressData.strength}%` }}></div>
-                </div>
-              </div>
-              <div>
-                <label className="text-gray-600">סיבולת</label>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div className="bg-green-600 h-2.5 rounded-full" style={{ width: `${progressData.endurance}%` }}></div>
-                </div>
-              </div>
-              <div>
-                <label className="text-gray-600">גמישות</label>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: `${progressData.flexibility}%` }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* תוכנית אימונים שבועית */}
           <div className="md:col-span-2 bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-bold mb-4">תוכנית אימונים שבועית</h2>
