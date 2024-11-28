@@ -32,6 +32,12 @@ const Navbar = () => {
       >
         אזור אישי
       </Link>
+      <Link 
+        to="/workout-videos" 
+        className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
+      >
+        סרטוני אימון
+      </Link>
       {user?.role === 'admin' && (
         <Link 
           to="/admin/panel" 

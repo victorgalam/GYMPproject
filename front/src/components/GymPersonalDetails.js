@@ -66,7 +66,7 @@ function GymPersonalDetails() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData(prev =>({
 
       ...prev,
       [name]: value
@@ -94,12 +94,14 @@ function GymPersonalDetails() {
     try {
       const currentUser = authService.getCurrentUser();
       if (!currentUser) {
+        setError('משתמש לא מחובר');
         navigate('/login');
         return;
       }
 
       const token = authService.getToken();
       if (!token) {
+        setError('טוקן לא תקין');
         navigate('/login');
         return;
       }
@@ -118,15 +120,21 @@ function GymPersonalDetails() {
         console.log('Data saved successfully:', response);
         // שמירת הנתונים ב-localStorage למקרה שהמשתמש יעשה רענון לדף
         localStorage.setItem('gymUserData', JSON.stringify(formData));
+        
+        // הצגת הודעת הצלחה
+        alert('הפרטים האישיים נשמרו בהצלחה!');
+        
         // העברת הנתונים דרך state בניווט
         navigate('/recommendations', { state: { personalDetails: formData } });
       } catch (error) {
         console.error('Error saving data:', error);
         setError(error.response?.data?.message || 'אירעה שגיאה בשמירת הנתונים');
+      } finally {
+        setLoading(false);
       }
     } catch (error) {
-      console.error('Submit error:', error);
-      setError('אירעה שגיאה בשמירת הנתונים');
+      console.error('Error:', error);
+      setError(error.response?.data?.message || 'אירעה שגיאה בשמירת הנתונים');
     } finally {
       setLoading(false);
     }
