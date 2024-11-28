@@ -1,13 +1,40 @@
-// userRouter.js
+// server/api/User/UserRoute.js
 const express = require('express');
-const userRouter = express.Router();
+const router = express.Router();
 const userController = require('./UserController');
+const { protect } = require('../../middleware/authMiddleware');
 
-userRouter.get('/', userController.getUsers);
-userRouter.post('/', userController.createUser);
-userRouter.get('/:id', userController.getUserById);
-userRouter.patch('/:id', userController.updateUserById);
-userRouter.delete('/:id', userController.deleteUserById);
-userRouter.get('/get/statistic', userController.getStatistic);
+// Middleware לרישום בקשות
+router.use((req, res, next) => {
+   console.log('User Router:', req.method, req.path);
+   next();
+});
 
-module.exports = userRouter;
+// נתיב הרשמה
+router.post('/register', userController.createRegister);
+
+// נתיבי אימות
+router.post('/login', userController.login);
+router.post('/google-auth', userController.googleAuth);
+router.post('/google-auth-new', userController.googleAuth); // הוספת נתיב Google Auth
+router.post('/logout', userController.logout);
+
+// נתיבי פרטים אישיים - מוגנים
+router.post('/me/personal-details', protect, userController.createMyPersonalDetails);
+router.put('/me/personal-details', protect, userController.updateMyPersonalDetails);
+router.get('/me/personal-details', protect, userController.getMyPersonalDetails);
+
+// נתיבי פרופיל משתמש
+router.get('/me', protect, userController.getProfile);
+router.get('/me/data', protect, userController.getMyData);  // נתיב חדש לקבלת כל הנתונים
+router.put('/me', protect, userController.updateProfile);
+
+// נתיבי משתמש כלליים
+router.get('/', protect, userController.getUsers);
+router.post('/', protect, userController.createUser);
+router.get('/get/statistic', protect, userController.getStatistic);
+router.get('/:id', protect, userController.getUserById);
+router.patch('/:id', protect, userController.updateUserById);
+router.delete('/:id', protect, userController.deleteUserById);
+
+module.exports = router;

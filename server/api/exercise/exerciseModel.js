@@ -15,13 +15,41 @@ var exerciseSchema = new Schema({
    },
    category: { 
       type: String, 
-      enum: ['cardio', 'strength', 'flexibility', 'balance'], // רק ערכים מסוימים
+      enum: ['cardio', 'strength', 'flexibility', 'balance'], 
       required: true 
+   },
+   sets: {
+      type: Number,
+      min: 1,
+      default: 1
+   },
+   reps: {
+      type: Number,
+      min: 1,
+      default: 1
+   },
+   duration: {
+      type: Number, // בדקות
+      min: 1
+   },
+   intensity: {
+      type: String,
+      enum: ['קל', 'בינוני', 'קשה'],
+      default: 'בינוני'
+   },
+   equipment: [{
+      type: String,
+      trim: true
+   }],
+   userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
    },
    id: { 
       type: Number, 
       unique: true 
    }
-}, { timestamps: true }); // הוספת createdAt ו-updatedAt
+}, { timestamps: true });
 
 module.exports = mongoose.model('exercise', exerciseSchema);
