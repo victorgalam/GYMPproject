@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { addToGoogleCalendar, addRecurringToGoogleCalendar } from './GoogleCalendar';
 import { useGoogleLogin } from '@react-oauth/google';
 
@@ -174,6 +175,7 @@ const ExerciseList = ({ workoutType, onSelectExercise }) => {
 };
 
 const WorkoutBuilder = () => {
+  const navigate = useNavigate();
   const [selectedExercises, setSelectedExercises] = useState([]);
   const [workoutType, setWorkoutType] = useState('gym');
   const [showExerciseModal, setShowExerciseModal] = useState(false);
@@ -278,6 +280,10 @@ const WorkoutBuilder = () => {
       setSelectedDate(new Date());
       setSelectedTime('09:00');
       setDuration(60);
+      
+      // חזרה לדף הקודם
+      navigate(-1);
+
     } catch (error) {
       console.error('Error saving workout:', error);
       if (error.message.includes('No access token') || error.message.includes('אנא התחבר')) {
