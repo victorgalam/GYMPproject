@@ -49,12 +49,12 @@ function App() {
           <Route path="/admin" element={<AdminLogin />} />
           
           {/* User Routes */}
-          <Route path="/user-panel" element={<UserPanel />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/user-panel" element={<UserPanel />} />
           <Route path="/personal-details" element={<GymPersonalDetails />} />
           <Route path="/recommendations" element={<GymRecommendations />} />
           <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/workout-videos" element={<WorkoutVideos />} />
+          <Route path="/videos" element={<WorkoutVideos />} />
           
           {/* Admin Routes */}
           <Route path="/admin/panel" element={<AdminPanel />} />

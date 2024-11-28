@@ -93,36 +93,39 @@ function GymPersonalDetails() {
     try {
       const currentUser = authService.getCurrentUser();
       if (!currentUser) {
+        setError('משתמש לא מחובר');
         navigate('/login');
         return;
       }
 
       const token = authService.getToken();
       if (!token) {
+        setError('טוקן לא תקין');
         navigate('/login');
         return;
       }
 
       // נסיון לשמור את הנתונים
-      try {
-        let response;
-        if (isDataLoaded) {
-          // עדכון נתונים קיימים
-          response = await userService.updateMyPersonalDetails(formData);
-        } else {
-          // יצירת נתונים חדשים
-          response = await userService.createMyPersonalDetails(formData);
-        }
-        
-        console.log('Data saved successfully:', response);
-        navigate('/dashboard'); // או כל דף אחר שתרצה לנווט אליו
-      } catch (error) {
-        console.error('Error saving data:', error);
-        setError(error.response?.data?.message || 'אירעה שגיאה בשמירת הנתונים');
+      let response;
+      if (isDataLoaded) {
+        // עדכון נתונים קיימים
+        response = await userService.updateMyPersonalDetails(formData);
+      } else {
+        // יצירת נתונים חדשים
+        response = await userService.createMyPersonalDetails(formData);
       }
+      
+      console.log('Data saved successfully:', response);
+      
+      // הצגת הודעת הצלחה
+      alert('הפרטים האישיים נשמרו בהצלחה!');
+      
+      // ניווט לדף הפאנל של המשתמש
+      navigate('/user-panel');
+      
     } catch (error) {
-      console.error('Submit error:', error);
-      setError('אירעה שגיאה בשמירת הנתונים');
+      console.error('Error:', error);
+      setError(error.response?.data?.message || 'אירעה שגיאה בשמירת הנתונים');
     } finally {
       setLoading(false);
     }

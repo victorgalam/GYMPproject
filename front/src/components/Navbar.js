@@ -72,6 +72,12 @@ const Navbar = () => {
                 >
                   אזור אישי
                 </Link>
+                <Link 
+                  to="/videos" 
+                  className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
+                >
+                  סרטוני אימון
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
@@ -128,6 +134,12 @@ const Navbar = () => {
                   className="block text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
                 >
                   אזור אישי
+                </Link>
+                <Link 
+                  to="/videos" 
+                  className="block text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
+                >
+                  סרטוני אימון
                 </Link>
                 <button
                   onClick={handleLogout}
