@@ -273,6 +273,7 @@ const WorkoutBuilder = () => {
         alert('האימון נוסף בהצלחה ליומן גוגל ולשרת!');
         navigate(-1);
       } else {
+        
         // אימון קבוע
         if (!schedulePattern) {
           alert('נא לבחור תדירות לאימון הקבוע');

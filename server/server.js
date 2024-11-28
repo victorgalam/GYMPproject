@@ -30,7 +30,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/users', require('./api/User/UserRoute'));
 app.use('/api/personal-details', require('./api/PersonalDetails/PersonalDetailsRoute'));
-app.use('/api/exercise', require('./api/exercise/exerciseRoute'));
+// app.use('/api/exercise', require('./api/exercise/exerciseRoute'));
 app.use('/api/workouts', require('./api/workouts/WorkoutRoute'));
 
 // MongoDB connection
