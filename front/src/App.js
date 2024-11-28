@@ -1,6 +1,7 @@
 import React from 'react';
 import './App.css';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { authService } from './services/authService';
 
 // Layout Components
 import Navbar from './components/Navbar';
@@ -30,6 +31,22 @@ import AdminPanel from './components/AdminPanel';
 import WorkoutVideos from './components/WorkoutVideos';
 import LocationsMap from './components/LocationsMap';
 
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  if (!authService.isAuthenticated()) {
+    return <Navigate to="/login" />;
+  }
+  return children;
+};
+
+// Guest Route Component (רק למשתמשים לא מחוברים)
+const GuestRoute = ({ children }) => {
+  if (authService.isAuthenticated()) {
+    return <Navigate to="/dashboard" />;
+  }
+  return children;
+};
+
 function App() {
   return (
     <Router>
@@ -43,21 +60,61 @@ function App() {
           <Route path="/introduction" element={<Introduction />} />
           <Route path="/locations" element={<LocationsMap />} />
           
-          {/* Auth Routes */}
-          <Route path="/login" element={<UserLogin />} />
-          <Route path="/register" element={<UserRegister />} />
-          <Route path="/admin" element={<AdminLogin />} />
+          {/* Auth Routes - רק למשתמשים לא מחוברים */}
+          <Route path="/login" element={
+            <GuestRoute>
+              <UserLogin />
+            </GuestRoute>
+          } />
+          <Route path="/register" element={
+            <GuestRoute>
+              <UserRegister />
+            </GuestRoute>
+          } />
+          <Route path="/admin" element={
+            <GuestRoute>
+              <AdminLogin />
+            </GuestRoute>
+          } />
           
-          {/* User Routes */}
-          <Route path="/user-panel" element={<UserPanel />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/personal-details" element={<GymPersonalDetails />} />
-          <Route path="/recommendations" element={<GymRecommendations />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/workout-videos" element={<WorkoutVideos />} />
+          {/* User Routes - רק למשתמשים מחוברים */}
+          <Route path="/user-panel" element={
+            <ProtectedRoute>
+              <UserPanel />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/personal-details" element={
+            <ProtectedRoute>
+              <GymPersonalDetails />
+            </ProtectedRoute>
+          } />
+          <Route path="/recommendations" element={
+            <ProtectedRoute>
+              <GymRecommendations />
+            </ProtectedRoute>
+          } />
+          <Route path="/calendar" element={
+            <ProtectedRoute>
+              <CalendarPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/workout-videos" element={
+            <ProtectedRoute>
+              <WorkoutVideos />
+            </ProtectedRoute>
+          } />
           
           {/* Admin Routes */}
-          <Route path="/admin/panel" element={<AdminPanel />} />
+          <Route path="/admin/panel" element={
+            <ProtectedRoute>
+              <AdminPanel />
+            </ProtectedRoute>
+          } />
         </Routes>
       </div>
     </Router>

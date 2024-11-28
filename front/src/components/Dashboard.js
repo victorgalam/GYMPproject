@@ -1,6 +1,6 @@
 // src/components/Dashboard.js
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import GymRecommendations from './GymRecommendations';
 import WorkoutPlanner from './WorkoutPlanner';
 import { axiosInstance } from '../services/authService';
@@ -21,21 +21,15 @@ const Dashboard = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [workoutPlan, setWorkoutPlan] = useState([]);
   const [userData, setUserData] = useState(null);
+  const navigate = useNavigate();
 
   const location = useLocation();
 
-  // useEffect(() => {
-  //     const storedUserData = JSON.parse(localStorage.getItem('user'));
-  //       console.log(storedUserData);
-  //       setUserData(storedUserData);
-  //     })
-  //       .catch(error => {console.error(error);});
-  //   }, []);
-
   useEffect(() => {
     // Try to get data from location state or localStorage
-    const savedData = location.state?.formData || localStorage.getItem('user') || '{}';
-    console.log({ savedData });
+    const storedData = localStorage.getItem('gymUserData');
+    const savedData = location.state?.formData || (storedData ? JSON.parse(storedData) : {});
+    console.log('Dashboard data:', savedData);
 
     // Merge saved data with initial structure to ensure all fields exist
     setFormData(prevData => ({
@@ -83,6 +77,12 @@ const Dashboard = () => {
                 <span className="font-medium">משקל:</span> {formData.weight ? `${formData.weight} ק"ג` : 'לא צוין'}
               </div>
               <div>
+                <span className="font-medium">BMI:</span>{' '}
+                {formData.height && formData.weight
+                  ? `${(formData.weight / Math.pow(formData.height / 100, 2)).toFixed(1)}`
+                  : 'לא צוין'}
+              </div>
+              <div>
                 <span className="font-medium">ניסיון:</span> {formData.experience || 'לא צוין'}
               </div>
               <div>
@@ -114,7 +114,17 @@ const Dashboard = () => {
           </div>
 
           {/* קומפוננטת ההמלצות */}
-          <GymRecommendations formData={formData} />
+          <GymRecommendations formData={formData} isDashboard={true} />
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <button
+              onClick={() => navigate('/personal-details')}
+              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition duration-200"
+            >
+              עדכן פרטים אישיים
+            </button>
+          </div>
         </div>
       </main>
     </div>

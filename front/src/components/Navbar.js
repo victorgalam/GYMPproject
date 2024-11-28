@@ -23,10 +23,59 @@ const Navbar = () => {
     navigate('/');
   };
 
+  // תפריט למשתמש מחובר
+  const AuthenticatedLinks = () => (
+    <>
+      <Link 
+        to="/dashboard" 
+        className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
+      >
+        אזור אישי
+      </Link>
+      {user?.role === 'admin' && (
+        <Link 
+          to="/admin/panel" 
+          className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
+        >
+          ניהול
+        </Link>
+      )}
+      <button
+        onClick={handleLogout}
+        className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
+      >
+        התנתק
+      </button>
+    </>
+  );
+
+  // תפריט למשתמש לא מחובר
+  const GuestLinks = () => (
+    <>
+      <Link 
+        to="/login" 
+        className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
+      >
+        התחברות
+      </Link>
+      <Link 
+        to="/register" 
+        className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
+      >
+        הרשמה
+      </Link>
+    </>
+  );
+
   return (
     <nav className="bg-gradient-to-r from-blue-600 to-blue-800 shadow-lg">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
+          {/* לוגו או שם האתר */}
+          <Link to="/" className="text-white text-xl font-bold">
+            GYM
+          </Link>
+
           {/* כפתור תפריט למובייל */}
           <div className="md:hidden">
             <button
@@ -44,117 +93,37 @@ const Navbar = () => {
           </div>
 
           {/* תפריט דסקטופ */}
-          <div className="hidden md:flex items-center space-x-8 ml-auto">
-            <Link 
-              to="/" 
-              className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
-            >
-              דף הבית
-            </Link>
-            
+          <div className="hidden md:flex items-center space-x-8 space-x-reverse">
             {user ? (
-              // תצוגה למשתמש מחובר
               <>
                 <span className="text-white font-medium">
                   שלום, {user.username || user.name || 'משתמש'}
                 </span>
-                {user.role === 'admin' && (
-                  <Link 
-                    to="/admin/dashboard" 
-                    className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
-                  >
-                    ניהול
-                  </Link>
-                )}
-                <Link 
-                  to="/dashboard" 
-                  className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
-                >
-                  אזור אישי
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
-                >
-                  התנתק
-                </button>
+                <AuthenticatedLinks />
               </>
             ) : (
-              // תצוגה למשתמש לא מחובר
-              <>
-                <Link 
-                  to="/login" 
-                  className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
-                >
-                  התחברות
-                </Link>
-                <Link 
-                  to="/register" 
-                  className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
-                >
-                  הרשמה
-                </Link>
-              </>
+              <GuestLinks />
             )}
           </div>
         </div>
 
         {/* תפריט מובייל */}
-        <div className={`${isOpen ? 'block' : 'hidden'} md:hidden`}>
-          <div className="px-2 pt-2 pb-3 space-y-1 text-right">
-            <Link 
-              to="/" 
-              className="block text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
-            >
-              דף הבית
-            </Link>
-            
-            {user ? (
-              // תצוגת מובייל למשתמש מחובר
-              <>
-                <div className="block text-white px-3 py-2 text-base font-medium">
-                  שלום, {user.username || user.name || 'משתמש'}
-                </div>
-                {user.role === 'admin' && (
-                  <Link 
-                    to="/admin/dashboard" 
-                    className="block text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
-                  >
-                    ניהול
-                  </Link>
-                )}
-                <Link 
-                  to="/dashboard" 
-                  className="block text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
-                >
-                  אזור אישי
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-right text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
-                >
-                  התנתק
-                </button>
-              </>
-            ) : (
-              // תצוגת מובייל למשתמש לא מחובר
-              <>
-                <Link 
-                  to="/login" 
-                  className="block text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
-                >
-                  התחברות
-                </Link>
-                <Link 
-                  to="/register" 
-                  className="block text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
-                >
-                  הרשמה
-                </Link>
-              </>
-            )}
+        {isOpen && (
+          <div className="md:hidden py-4">
+            <div className="flex flex-col space-y-4 items-center">
+              {user ? (
+                <>
+                  <span className="text-white font-medium">
+                    שלום, {user.username || user.name || 'משתמש'}
+                  </span>
+                  <AuthenticatedLinks />
+                </>
+              ) : (
+                <GuestLinks />
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </nav>
   );

@@ -100,27 +100,43 @@ const LandingPage = () => {
                 <p className="text-xl text-gray-600 mb-8">
                   המשך את המסע שלך לעבר המטרות שלך
                 </p>
-                <Link 
-                  to="/dashboard" 
-                  className="inline-block px-8 py-4 bg-blue-600 text-white rounded-lg text-lg font-semibold hover:bg-blue-700 transition duration-200"
-                >
-                  המשך לאזור האישי
-                </Link>
+                <div className="flex flex-col sm:flex-row justify-center lg:justify-start space-y-4 sm:space-y-0 sm:space-x-4 sm:space-x-reverse">
+                  <Link
+                    to="/dashboard"
+                    className="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200"
+                  >
+                    לאזור האישי שלי
+                  </Link>
+                  <Link
+                    to="/workout-videos"
+                    className="px-8 py-3 bg-white text-blue-600 border-2 border-blue-600 rounded-md hover:bg-blue-50 transition duration-200"
+                  >
+                    סרטוני אימון
+                  </Link>
+                </div>
               </>
             ) : (
               <>
                 <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                  הדרך שלך להצלחה מתחילה כאן
+                  התחל את המסע שלך לכושר
                 </h1>
                 <p className="text-xl text-gray-600 mb-8">
-                  מערכת מתקדמת למעקב אחר אימונים, תזונה והתקדמות אישית
+                  הצטרף אלינו והתחל לבנות את תוכנית האימונים המושלמת עבורך
                 </p>
-                <Link 
-                  to="/register" 
-                  className="inline-block px-8 py-4 bg-blue-600 text-white rounded-lg text-lg font-semibold hover:bg-blue-700 transition duration-200"
-                >
-                  התחל להתאמן עכשיו
-                </Link>
+                <div className="flex flex-col sm:flex-row justify-center lg:justify-start space-y-4 sm:space-y-0 sm:space-x-4 sm:space-x-reverse">
+                  <Link
+                    to="/register"
+                    className="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200"
+                  >
+                    הרשמה חינמית
+                  </Link>
+                  <Link
+                    to="/about"
+                    className="px-8 py-3 bg-white text-blue-600 border-2 border-blue-600 rounded-md hover:bg-blue-50 transition duration-200"
+                  >
+                    למד עוד
+                  </Link>
+                </div>
               </>
             )}
           </div>

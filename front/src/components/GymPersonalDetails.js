@@ -67,6 +67,7 @@ function GymPersonalDetails() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
+
       ...prev,
       [name]: value
     }));
@@ -115,7 +116,10 @@ function GymPersonalDetails() {
         }
         
         console.log('Data saved successfully:', response);
-        navigate('/dashboard'); // או כל דף אחר שתרצה לנווט אליו
+        // שמירת הנתונים ב-localStorage למקרה שהמשתמש יעשה רענון לדף
+        localStorage.setItem('gymUserData', JSON.stringify(formData));
+        // העברת הנתונים דרך state בניווט
+        navigate('/recommendations', { state: { personalDetails: formData } });
       } catch (error) {
         console.error('Error saving data:', error);
         setError(error.response?.data?.message || 'אירעה שגיאה בשמירת הנתונים');
