@@ -12,12 +12,12 @@ const exercises = [
 const WorkoutPlanner = () => {
   const [workout, setWorkout] = useState([]);
 
-  const handleExerciseToggle = (exerciseId) => {
+  const handleExerciseToggle = (id) => {
     setWorkout(prevWorkout => {
-      if (prevWorkout.includes(exerciseId)) {
-        return prevWorkout.filter(id => id !== exerciseId);
+      if (prevWorkout.includes(id)) {
+        return prevWorkout.filter(id => id !== id);
       } else {
-        return [...prevWorkout, exerciseId];
+        return [...prevWorkout, id];
       }
     });
   };

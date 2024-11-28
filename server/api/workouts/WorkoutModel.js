@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const exerciseInWorkoutSchema = new mongoose.Schema({
-    exerciseId: {
+    id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Exercise',
         required: true
@@ -103,7 +103,7 @@ workoutSchema.virtual('formattedEndDate').get(function() {
 workoutSchema.statics.findUserWorkouts = async function(userId) {
     return this.find({ userId })
         .sort({ startDate: -1 })
-        .populate('exercises.exerciseId');
+        .populate('exercises.id');
 };
 
 // מתודות של המסמך

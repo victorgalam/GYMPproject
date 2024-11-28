@@ -1,10 +1,15 @@
 const Workout = require('./WorkoutModel');
+const mongoose = require('mongoose');
 
 // יצירת אימון חדש
 const createWorkout = async (req, res) => {
     try {
         const { title, description, exercises, startDate, endDate, duration } = req.body;
         const userId = req.user._id;
+
+        exercises.forEach(exercise => {
+            exercise["id"] = new mongoose.Types.ObjectId();
+        });
 
         const workout = new Workout({
             userId,
@@ -123,7 +128,7 @@ const getWorkoutById = async (req, res) => {
         const workout = await Workout.findOne({
             _id: req.params.id,
             userId: req.user._id
-        }).populate('exercises.exerciseId');
+        }).populate('exercises.id');
 
         if (!workout) {
             return res.status(404).json({

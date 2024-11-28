@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addToGoogleCalendar, addRecurringToGoogleCalendar } from './GoogleCalendar';
 import { useGoogleLogin } from '@react-oauth/google';
+import { authService } from '../services/authService';
 
 // נתונים סטטיים לדוגמה - בהמשך אפשר להעביר למסד נתונים
 const exerciseLibrary = {
@@ -146,7 +147,7 @@ const getCategoryName = (category) => {
 
 const ExerciseList = ({ workoutType, onSelectExercise }) => {
   const exercises = exerciseLibrary[workoutType] || {};
-  
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {Object.entries(exercises).map(([category, categoryExercises]) => (
@@ -207,6 +208,7 @@ const WorkoutBuilder = () => {
 
   const handleSaveWorkout = async () => {
     try {
+
       if (!isAuthenticated) {
         alert('נא להתחבר תחילה לחשבון Google');
         login();
@@ -223,6 +225,10 @@ const WorkoutBuilder = () => {
         const metrics = getExerciseMetrics(exercise);
         return `${exercise.name}\n${metrics}`;
       }).join('\n\n');
+      selectedExercises.forEach(exercises => {
+        exercises["id"] = exercises["id"];
+        delete exercises["id"];
+      });
 
       if (frequency === 'one-time') {
         // אימון חד פעמי
@@ -240,7 +246,31 @@ const WorkoutBuilder = () => {
           endDateTime
         });
 
-        alert('האימון נוסף בהצלחה ליומן גוגל!');
+
+        // שמירת האימון בשרת
+        try {
+          await fetch('http://localhost:3000/api/workouts', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authService.getToken()}`
+            },
+            body: JSON.stringify({
+              title: workoutTitle,
+              description,
+              exercises: selectedExercises,
+              startDate: startDateTime,
+              endDate: endDateTime,
+              duration
+            })
+          });
+        } catch (error) {
+          console.error('Error saving workout to server:', error);
+          alert('אירעה שגיאה בשמירת האימון בשרת');
+          return;
+
+        }
+        alert('האימון נוסף בהצלחה ליומן גוגל ולשרת!');
         navigate(-1);
       } else {
         // אימון קבוע
@@ -254,6 +284,10 @@ const WorkoutBuilder = () => {
           alert('שגיאה ביצירת תבנית החזרה');
           return;
         }
+
+
+
+
 
         const startDateTime = new Date(selectedDate);
         const [hours, minutes] = selectedTime.split(':');
@@ -270,6 +304,31 @@ const WorkoutBuilder = () => {
           recurrence: [recurrenceRule]
         });
 
+        
+
+        // שמירת האימון הקבוע בשרת
+        try {
+          await fetch('/api/workouts/recurring', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authService.getToken()}`
+            },
+            body: JSON.stringify({
+              title: workoutTitle,
+              description,
+              exercises: selectedExercises,
+              startDate: startDateTime,
+              endDate: endDateTime,
+              duration,
+              recurrence: recurrenceRule
+            })
+          });
+        } catch (error) {
+          console.error('Error saving recurring workout to server:', error);
+          alert('אירעה שגיאה בשמירת האימון הקבוע בשרת');
+          return;
+        }
         alert('האימון הקבוע נוסף בהצלחה ליומן גוגל!');
         navigate(-1);
       }
@@ -298,7 +357,6 @@ const WorkoutBuilder = () => {
     setSelectedExercises([
       ...selectedExercises,
       {
-        id: Date.now(),
         name: exercise.name,
         type: exercise.type,
         sets: exercise.defaultSets,
@@ -331,8 +389,8 @@ const WorkoutBuilder = () => {
     );
   };
 
-  const removeExercise = (exerciseId) => {
-    setSelectedExercises(selectedExercises.filter(ex => ex.id !== exerciseId));
+  const removeExercise = (id) => {
+    setSelectedExercises(selectedExercises.filter(ex => ex.id !== id));
   };
 
   const moveExerciseUp = (index) => {
@@ -379,24 +437,22 @@ const WorkoutBuilder = () => {
           </div>
         </div>
       )}
-      
+
       {/* בחירת תדירות */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-3">סוג האימון</h2>
         <div className="flex gap-4">
           <button
             onClick={() => setFrequency('one-time')}
-            className={`px-4 py-2 rounded ${
-              frequency === 'one-time' ? 'bg-blue-600 text-white' : 'bg-gray-200'
-            }`}
+            className={`px-4 py-2 rounded ${frequency === 'one-time' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+              }`}
           >
             אימון חד פעמי
           </button>
           <button
             onClick={() => setFrequency('recurring')}
-            className={`px-4 py-2 rounded ${
-              frequency === 'recurring' ? 'bg-blue-600 text-white' : 'bg-gray-200'
-            }`}
+            className={`px-4 py-2 rounded ${frequency === 'recurring' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+              }`}
           >
             אימון קבוע
           </button>
@@ -423,23 +479,23 @@ const WorkoutBuilder = () => {
             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
               <div>
                 <label className="block text-sm text-gray-600 mb-2">ימי אימון רצופים</label>
-              <input
-                type="number"
-                min="1"
-                max="7"
-                value={1}
-                className="w-full p-2 border rounded"
-              />
+                <input
+                  type="number"
+                  min="1"
+                  max="7"
+                  value={1}
+                  className="w-full p-2 border rounded"
+                />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-2">ימי מנוחה</label>
-              <input
-                type="number"
-                min="1"
-                max="7"
-                value={1}
-                className="w-full p-2 border rounded"
-              />
+                <input
+                  type="number"
+                  min="1"
+                  max="7"
+                  value={1}
+                  className="w-full p-2 border rounded"
+                />
               </div>
             </div>
           )}
@@ -449,17 +505,15 @@ const WorkoutBuilder = () => {
             <div className="flex gap-4 mt-4">
               <button
                 onClick={() => setWorkoutType('A')}
-                className={`flex-1 px-4 py-2 rounded ${
-                  workoutType === 'A' ? 'bg-blue-600 text-white' : 'bg-gray-200'
-                }`}
+                className={`flex-1 px-4 py-2 rounded ${workoutType === 'A' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+                  }`}
               >
                 אימון A
               </button>
               <button
                 onClick={() => setWorkoutType('B')}
-                className={`flex-1 px-4 py-2 rounded ${
-                  workoutType === 'B' ? 'bg-blue-600 text-white' : 'bg-gray-200'
-                }`}
+                className={`flex-1 px-4 py-2 rounded ${workoutType === 'B' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+                  }`}
               >
                 אימון B
               </button>
@@ -542,9 +596,8 @@ const WorkoutBuilder = () => {
                   <button
                     onClick={() => moveExerciseUp(index)}
                     disabled={index === 0}
-                    className={`p-1 text-gray-500 hover:text-gray-700 ${
-                      index === 0 ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
+                    className={`p-1 text-gray-500 hover:text-gray-700 ${index === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     title="העבר למעלה"
                   >
                     ▲
@@ -552,9 +605,8 @@ const WorkoutBuilder = () => {
                   <button
                     onClick={() => moveExerciseDown(index)}
                     disabled={index === selectedExercises.length - 1}
-                    className={`p-1 text-gray-500 hover:text-gray-700 ${
-                      index === selectedExercises.length - 1 ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
+                    className={`p-1 text-gray-500 hover:text-gray-700 ${index === selectedExercises.length - 1 ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                     title="העבר למטה"
                   >
                     ▼
