@@ -1,113 +1,168 @@
-import React, { useState } from 'react';
-import { GoogleOAuthProvider, GoogleLogin, useGoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode';
+import React, { useState, useEffect } from 'react';
+import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 
-const SCOPES = [
-  'https://www.googleapis.com/auth/calendar',
-  'https://www.googleapis.com/auth/calendar.events'
-].join(' ');
+const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar';
+
+// פונקציה להוספת אירוע חד פעמי
+export const addToGoogleCalendar = async ({ summary, description, startDateTime, endDateTime }) => {
+  try {
+    const accessToken = localStorage.getItem('google_access_token');
+    if (!accessToken) {
+      throw new Error('אנא התחבר תחילה לחשבון Google');
+    }
+
+    const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        summary,
+        description,
+        start: {
+          dateTime: startDateTime.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        end: {
+          dateTime: endDateTime.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'שגיאה ביצירת האירוע');
+    }
+
+    const result = await response.json();
+    console.log('Event created:', result);
+    return result;
+  } catch (error) {
+    console.error('Error creating event:', error);
+    throw error;
+  }
+};
+
+// פונקציה להוספת אירוע מחזורי
+export const addRecurringToGoogleCalendar = async ({ summary, description, startDateTime, endDateTime, recurrence }) => {
+  try {
+    const accessToken = localStorage.getItem('google_access_token');
+    if (!accessToken) {
+      throw new Error('אנא התחבר תחילה לחשבון Google');
+    }
+
+    const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        summary,
+        description,
+        start: {
+          dateTime: startDateTime.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        end: {
+          dateTime: endDateTime.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        recurrence
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'שגיאה ביצירת האירוע המחזורי');
+    }
+
+    const result = await response.json();
+    console.log('Recurring event created:', result);
+    return result;
+  } catch (error) {
+    console.error('Error creating recurring event:', error);
+    throw error;
+  }
+};
 
 const CalendarComponent = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [calendarUrl, setCalendarUrl] = useState('');
   const [userEmail, setUserEmail] = useState('');
-  const [accessToken, setAccessToken] = useState('');
-  const [showAddWorkout, setShowAddWorkout] = useState(false);
-  const [newWorkout, setNewWorkout] = useState({
-    title: '',
-    date: new Date().toISOString().split('T')[0],
-    startTime: '09:00',
-    endTime: '10:00',
-    description: ''
-  });
 
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      console.log('Token Response:', tokenResponse);
-      setAccessToken(tokenResponse.access_token);
-      
-      // Get user info
-      const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: {
-          Authorization: `Bearer ${tokenResponse.access_token}`,
-        },
-      });
-      const userData = await userInfo.json();
-      console.log('User Data:', userData);
-      
-      setUserEmail(userData.email);
-      setIsAuthenticated(true);
-      
-      const embeddedCalendarUrl = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(userData.email)}&ctz=Asia/Jerusalem&mode=WEEK&showPrint=0&showTabs=1&showCalendars=1&showTz=1&height=600`;
-      setCalendarUrl(embeddedCalendarUrl);
+      try {
+        console.log('Token Response:', tokenResponse);
+        localStorage.setItem('google_access_token', tokenResponse.access_token);
+        
+        // בדיקת תקינות הטוקן
+        const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`,
+          },
+        });
+        
+        if (!userInfo.ok) {
+          throw new Error('שגיאה בקבלת פרטי משתמש');
+        }
+
+        const userData = await userInfo.json();
+        setUserEmail(userData.email);
+        setIsAuthenticated(true);
+        
+        const embeddedCalendarUrl = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(userData.email)}&ctz=Asia/Jerusalem&mode=WEEK&showPrint=0&showTabs=1&showCalendars=1&showTz=1&height=600`;
+        setCalendarUrl(embeddedCalendarUrl);
+      } catch (error) {
+        console.error('Login error:', error);
+        localStorage.removeItem('google_access_token');
+        setIsAuthenticated(false);
+        alert('שגיאה בהתחברות. נא לנסות שוב.');
+      }
     },
     onError: (error) => {
       console.error('Login Failed:', error);
+      alert('ההתחברות נכשלה. נא לנסות שוב.');
     },
-    scope: 'email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
+    scope: CALENDAR_SCOPE,
     flow: 'implicit'
   });
 
-  const handleAddWorkout = async () => {
-    try {
-      if (!accessToken) {
-        console.error('No access token available');
-        alert('נא להתחבר מחדש לחשבון Google');
-        return;
-      }
+  // בדיקת תוקף הטוקן בטעינת הקומפוננטה
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('google_access_token');
+      if (token) {
+        try {
+          const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          
+          if (!response.ok) {
+            throw new Error('Token invalid');
+          }
 
-      const event = {
-        'summary': newWorkout.title,
-        'description': newWorkout.description,
-        'start': {
-          'dateTime': `${newWorkout.date}T${newWorkout.startTime}:00`,
-          'timeZone': 'Asia/Jerusalem'
-        },
-        'end': {
-          'dateTime': `${newWorkout.date}T${newWorkout.endTime}:00`,
-          'timeZone': 'Asia/Jerusalem'
+          const userData = await response.json();
+          setUserEmail(userData.email);
+          setIsAuthenticated(true);
+          
+          const embeddedCalendarUrl = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(userData.email)}&ctz=Asia/Jerusalem&mode=WEEK&showPrint=0&showTabs=1&showCalendars=1&showTz=1&height=600`;
+          setCalendarUrl(embeddedCalendarUrl);
+        } catch (error) {
+          console.error('Token validation error:', error);
+          localStorage.removeItem('google_access_token');
+          setIsAuthenticated(false);
         }
-      };
-
-      console.log('Sending event:', event);
-      console.log('Using access token:', accessToken);
-
-      const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(event)
-      });
-
-      console.log('Response status:', response.status);
-      const responseData = await response.json();
-      console.log('Response data:', responseData);
-
-      if (response.ok) {
-        alert('האימון נוסף בהצלחה ליומן!');
-        setShowAddWorkout(false);
-        setNewWorkout({
-          title: '',
-          date: new Date().toISOString().split('T')[0],
-          startTime: '09:00',
-          endTime: '10:00',
-          description: ''
-        });
-      } else {
-        throw new Error(responseData.error?.message || 'Failed to add event');
       }
-    } catch (error) {
-      console.error('Error adding event:', error);
-      if (error.message.includes('Invalid Credentials')) {
-        alert('נא להתחבר מחדש לחשבון Google');
-        setIsAuthenticated(false);
-      } else {
-        alert('אירעה שגיאה בהוספת האימון. נא לנסות שוב.');
-      }
-    }
-  };
+    };
+
+    checkAuth();
+  }, []);
 
   return (
     <div className="bg-white rounded-lg shadow-md">
@@ -126,17 +181,23 @@ const CalendarComponent = () => {
         </div>
       ) : (
         <div className="flex">
-          {/* Calendar Section */}
           <div className="flex-1">
             <div className="flex justify-between items-center p-4 border-b">
               <h2 className="text-xl font-bold">יומן אימונים</h2>
-              <button
-                onClick={() => setShowAddWorkout(!showAddWorkout)}
-                className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-full flex items-center space-x-1 transition-colors duration-200"
-              >
-                <span className="text-xl mr-1">+</span>
-                <span>הוסף אימון</span>
-              </button>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-600">{userEmail}</span>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('google_access_token');
+                    setIsAuthenticated(false);
+                    setCalendarUrl('');
+                    setUserEmail('');
+                  }}
+                  className="text-red-600 hover:text-red-700 text-sm"
+                >
+                  התנתק
+                </button>
+              </div>
             </div>
             <div className="calendar-container" style={{ height: 'calc(100vh - 80px)' }}>
               {calendarUrl && (
@@ -154,100 +215,14 @@ const CalendarComponent = () => {
               )}
             </div>
           </div>
-
-          {/* Add Workout Form */}
-          {showAddWorkout && (
-            <div className="w-96 border-r bg-white shadow-lg animate-slide-in">
-              <div className="p-4 border-b">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-semibold">אירוע חדש</h3>
-                  <button
-                    onClick={() => setShowAddWorkout(false)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-              <div className="p-4 space-y-4">
-                <div>
-                  <input
-                    type="text"
-                    value={newWorkout.title}
-                    onChange={(e) => setNewWorkout({ ...newWorkout, title: e.target.value })}
-                    className="w-full p-2 border-b focus:border-blue-500 focus:outline-none text-lg"
-                    placeholder="הוסף כותרת"
-                  />
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="flex-1">
-                    <label className="block text-sm text-gray-600 mb-1">תאריך</label>
-                    <input
-                      type="date"
-                      value={newWorkout.date}
-                      onChange={(e) => setNewWorkout({ ...newWorkout, date: e.target.value })}
-                      className="w-full p-2 border rounded focus:border-blue-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="flex space-x-4">
-                  <div className="flex-1">
-                    <label className="block text-sm text-gray-600 mb-1">התחלה</label>
-                    <input
-                      type="time"
-                      value={newWorkout.startTime}
-                      onChange={(e) => setNewWorkout({ ...newWorkout, startTime: e.target.value })}
-                      className="w-full p-2 border rounded focus:border-blue-500 focus:outline-none"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-sm text-gray-600 mb-1">סיום</label>
-                    <input
-                      type="time"
-                      value={newWorkout.endTime}
-                      onChange={(e) => setNewWorkout({ ...newWorkout, endTime: e.target.value })}
-                      className="w-full p-2 border rounded focus:border-blue-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <textarea
-                    value={newWorkout.description}
-                    onChange={(e) => setNewWorkout({ ...newWorkout, description: e.target.value })}
-                    className="w-full p-2 border rounded focus:border-blue-500 focus:outline-none"
-                    rows="3"
-                    placeholder="הוסף תיאור"
-                  />
-                </div>
-                <div className="flex justify-end space-x-2 pt-4 border-t">
-                  <button
-                    onClick={() => setShowAddWorkout(false)}
-                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
-                  >
-                    ביטול
-                  </button>
-                  <button
-                    onClick={handleAddWorkout}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    שמור
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
   );
 };
 
-const GoogleCalendar = () => {
-  return (
-    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
-      <CalendarComponent />
-    </GoogleOAuthProvider>
-  );
-};
+const GoogleCalendar = () => (
+  <CalendarComponent />
+);
 
 export default GoogleCalendar;
