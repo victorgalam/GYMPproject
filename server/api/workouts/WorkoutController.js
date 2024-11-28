@@ -49,6 +49,11 @@ const createRecurringWorkout = async (req, res) => {
             duration,
             recurrence
         } = req.body;
+
+        exercises.forEach(exercise => {
+            exercise["id"] = new mongoose.Types.ObjectId();
+        });
+        
         const userId = req.user._id;
 
         const workout = new Workout({
