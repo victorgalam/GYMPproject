@@ -225,6 +225,40 @@ const Home = () => {
     window.open('https://calendar.google.com', '_blank');
   };
 
+  // פונקציה לפורמט שם תרגיל
+  const formatExerciseName = (exercise) => {
+    if (!exercise || !exercise.name) return '';
+    return exercise.name.toString();
+  };
+
+  // פונקציה לפורמט תאריך ושעה
+  const formatDateTime = (dateString) => {
+    if (!dateString) return { date: '', time: '' };
+    const date = new Date(dateString);
+    return {
+      date: date.toLocaleDateString('he-IL'),
+      time: date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })
+    };
+  };
+
+  // פונקציה למיון אימונים לפי תאריך ושעה
+  const sortWorkouts = (workouts) => {
+    if (!Array.isArray(workouts)) return [];
+    return [...workouts].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+  };
+
+  // פונקציה להסרת אימונים כפולים
+  const removeDuplicateWorkouts = (workouts) => {
+    if (!Array.isArray(workouts)) return [];
+    const uniqueWorkouts = new Map();
+    workouts.forEach(workout => {
+      if (!uniqueWorkouts.has(workout._id)) {
+        uniqueWorkouts.set(workout._id, workout);
+      }
+    });
+    return Array.from(uniqueWorkouts.values());
+  };
+
   return (
     <div className="container mx-auto px-4 py-8" dir="rtl">
       <div className="flex justify-between items-center mb-6">
@@ -276,47 +310,54 @@ const Home = () => {
 
       {selectedTab === 'general' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {workouts.map((workout) => (
-            <div key={workout._id} className="bg-white shadow-lg rounded-lg p-6">
-              <h3 className="text-xl font-semibold mb-2">{workout.title}</h3>
-              <p className="text-gray-600 mb-4">{workout.description}</p>
-              <div className="text-sm text-gray-500">
-                <p>תאריך התחלה: {new Date(workout.startDate).toLocaleDateString('he-IL')}</p>
-                <p>תאריך סיום: {new Date(workout.endDate).toLocaleDateString('he-IL')}</p>
+          {removeDuplicateWorkouts(sortWorkouts(workouts)).map((workout) => {
+            const startDateTime = formatDateTime(workout.startDate);
+            const endDateTime = formatDateTime(workout.endDate);
+            
+            return (
+              <div key={workout._id} className="bg-white shadow-lg rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-2">{workout.title || 'אימון ללא כותרת'}</h3>
+                <p className="text-gray-600 mb-4">{workout.description || 'אין תיאור'}</p>
+                <div className="text-sm text-gray-500">
+                  <p>תאריך: {startDateTime.date}</p>
+                  <p>שעת התחלה: {startDateTime.time}</p>
+                  <p>שעת סיום: {endDateTime.time}</p>
+                  <p>משך האימון: {workout.duration || 0} דקות</p>
+                </div>
+                <div className="mt-4">
+                  <h4 className="font-semibold mb-2">תרגילים:</h4>
+                  <ul className="list-disc list-inside">
+                    {Array.isArray(workout.exercises) && workout.exercises.map((exercise, index) => (
+                      <li key={index} className="mb-1">
+                        {formatExerciseName(exercise)} - {exercise.sets || 0} סטים, {exercise.reps || 0} חזרות
+                        {exercise.weight > 0 && `, משקל: ${exercise.weight} ק"ג`}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="mt-4 flex justify-end space-x-2">
+                  <button
+                    onClick={() => navigate(`/workout-start/${workout._id}`)}
+                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded ml-2"
+                  >
+                    התחל אימון
+                  </button>
+                  <button
+                    onClick={() => navigateToWorkoutUpdate(workout._id)}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded ml-2"
+                  >
+                    ערוך
+                  </button>
+                  <button
+                    onClick={() => deleteWorkout(workout._id)}
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                  >
+                    מחק
+                  </button>
+                </div>
               </div>
-              <div className="mt-4">
-                <h4 className="font-semibold mb-2">תרגילים:</h4>
-                <ul className="list-disc list-inside">
-                  {workout.exercises.map((exercise, index) => (
-                    <li key={index} className="mb-1">
-                      {exercise.name} - {exercise.sets} סטים, {exercise.reps} חזרות
-                      {exercise.weight > 0 && `, משקל: ${exercise.weight} ק"ג`}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mt-4 flex justify-end space-x-2">
-                <button
-                  onClick={() => navigate(`/workout-checklist/${workout._id}`)}
-                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded ml-2"
-                >
-                  התחל אימון
-                </button>
-                <button
-                  onClick={() => navigateToWorkoutUpdate(workout._id)}
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded ml-2"
-                >
-                  ערוך
-                </button>
-                <button
-                  onClick={() => deleteWorkout(workout._id)}
-                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-                >
-                  מחק
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-md">

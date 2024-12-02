@@ -34,6 +34,7 @@ import WorkoutBuilder from './components/WorkoutBuilder';
 import GoogleCalendar from './components/GoogleCalendar';
 import WorkoutChecklist from './components/WorkoutChecklist';
 import WorkoutUpdate from './components/WorkoutUpdate';
+import WorkoutStart from './components/WorkoutStart';
 
 function App() {
   return (
@@ -65,6 +66,7 @@ function App() {
             <Route path="/workout-checklist/:workoutId" element={<WorkoutChecklist />} />
             <Route path="/google-calendar" element={<GoogleCalendar />} />
             <Route path="/workoutupdate/:workoutId" element={<WorkoutUpdate />} />
+            <Route path="/workout-start/:workoutId" element={<WorkoutStart />} />
             
             {/* Admin Routes */}
             <Route path="/admin/panel" element={<AdminPanel />} />

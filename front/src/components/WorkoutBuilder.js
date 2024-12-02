@@ -124,7 +124,7 @@ const exerciseLibrary = {
 };
 
 const workoutTypes = [
-  { id: 'gym', name: 'אימון כוח בחדר כושר' },
+  { id: 'gym', name: '  חדר כושר' },
   { id: 'calisthenics', name: 'קליסטניקס' },
   { id: 'running', name: 'ריצה' },
   { id: 'other', name: 'אימונים נוספים', categories: ['custom', 'stretching', 'recovery'] }
