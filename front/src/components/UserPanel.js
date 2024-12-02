@@ -216,6 +216,10 @@ const Home = () => {
     }
   };
 
+  const navigateToWorkoutUpdate = (workoutId) => {
+    navigate(`/workoutupdate/${workoutId}`);
+  };
+
   const handleGoogleCalendarSync = () => {
     // פתיחת Google Calendar בחלון חדש
     window.open('https://calendar.google.com', '_blank');
@@ -299,7 +303,7 @@ const Home = () => {
                   התחל אימון
                 </button>
                 <button
-                  onClick={() => updateWorkout(workout._id)}
+                  onClick={() => navigateToWorkoutUpdate(workout._id)}
                   className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded ml-2"
                 >
                   ערוך
