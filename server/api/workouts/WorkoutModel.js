@@ -101,9 +101,11 @@ workoutSchema.virtual('formattedEndDate').get(function() {
 
 // מתודות סטטיות
 workoutSchema.statics.findUserWorkouts = async function(userId) {
-    return this.find({ userId })
-        .sort({ startDate: -1 })
-        .populate('exercises.id');
+    try {
+        return await this.find({ userId }).sort({ startDate: -1 });
+    } catch (error) {
+        throw new Error('שגיאה בקבלת האימונים: ' + error.message);
+    }
 };
 
 // מתודות של המסמך

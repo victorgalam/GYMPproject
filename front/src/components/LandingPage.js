@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { UserCircle, LogOut } from 'lucide-react';
 import { authService } from '../services/authService';
+import logo from '../source/pic/logo.png';
 
 const LandingPage = () => {
   const [user, setUser] = useState(null);
@@ -126,7 +127,7 @@ const LandingPage = () => {
           </div>
           <div className="lg:w-1/2 mt-12 lg:mt-0">
             <img 
-              src="/api/placeholder/600/400"
+              src={logo}
               alt="אימון"
               className="rounded-lg shadow-lg"
             />

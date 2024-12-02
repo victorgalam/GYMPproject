@@ -32,6 +32,7 @@ import WorkoutVideos from './components/WorkoutVideos';
 import LocationsMap from './components/LocationsMap';
 import WorkoutBuilder from './components/WorkoutBuilder';
 import GoogleCalendar from './components/GoogleCalendar';
+import WorkoutChecklist from './components/WorkoutChecklist';
 
 function App() {
   return (
@@ -60,6 +61,7 @@ function App() {
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/videos" element={<WorkoutVideos />} />
             <Route path="/workout-builder" element={<WorkoutBuilder />} />
+            <Route path="/workout-checklist/:workoutId" element={<WorkoutChecklist />} />
             <Route path="/google-calendar" element={<GoogleCalendar />} />
             
             {/* Admin Routes */}

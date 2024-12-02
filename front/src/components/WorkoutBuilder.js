@@ -95,13 +95,39 @@ const exerciseLibrary = {
       { id: 'treadmill_intervals', name: 'אינטרוולים על הליכון', type: 'running', defaultSets: 8, defaultDistance: 0.4, defaultSpeed: 15 },
       { id: 'incline_run', name: 'ריצה בשיפוע', type: 'running', defaultDistance: 3, defaultSpeed: 8, defaultIncline: 5 }
     ]
+  },
+  other: {
+    custom: [
+      { id: 'custom_cardio', name: 'אימון קרדיו מותאם אישית', defaultSets: 1, type: 'time', defaultTime: 30 },
+      { id: 'custom_strength', name: 'אימון כוח מותאם אישית', defaultSets: 3, defaultReps: 12, type: 'weight' },
+      { id: 'custom_flexibility', name: 'אימון גמישות', defaultSets: 3, defaultTime: 30, type: 'time' },
+      { id: 'custom_hiit', name: 'אימון HIIT', defaultSets: 4, defaultTime: 45, type: 'time' },
+      { id: 'custom_mobility', name: 'אימון מוביליטי', defaultSets: 3, defaultTime: 45, type: 'time' },
+      { id: 'custom_yoga', name: 'יוגה', defaultSets: 1, defaultTime: 60, type: 'time' },
+      { id: 'custom_pilates', name: 'פילאטיס', defaultSets: 1, defaultTime: 45, type: 'time' },
+      { id: 'custom_boxing', name: 'אגרוף', defaultSets: 3, defaultTime: 180, type: 'time' },
+      { id: 'custom_swimming', name: 'שחייה', defaultSets: 1, type: 'distance', defaultDistance: 1 },
+      { id: 'custom_cycling', name: 'רכיבת אופניים', defaultSets: 1, type: 'distance', defaultDistance: 10 }
+    ],
+    stretching: [
+      { id: 'stretch_hamstrings', name: 'מתיחות רגליים אחוריות', defaultSets: 3, defaultTime: 30, type: 'time' },
+      { id: 'stretch_quads', name: 'מתיחות ירכיים קדמיות', defaultSets: 3, defaultTime: 30, type: 'time' },
+      { id: 'stretch_back', name: 'מתיחות גב', defaultSets: 3, defaultTime: 30, type: 'time' },
+      { id: 'stretch_shoulders', name: 'מתיחות כתפיים', defaultSets: 3, defaultTime: 30, type: 'time' }
+    ],
+    recovery: [
+      { id: 'foam_rolling', name: 'פאום רולר', defaultSets: 1, defaultTime: 300, type: 'time' },
+      { id: 'meditation', name: 'מדיטציה', defaultSets: 1, defaultTime: 600, type: 'time' },
+      { id: 'breathing', name: 'תרגילי נשימה', defaultSets: 3, defaultTime: 60, type: 'time' }
+    ]
   }
 };
 
 const workoutTypes = [
   { id: 'gym', name: 'אימון כוח בחדר כושר' },
   { id: 'calisthenics', name: 'קליסטניקס' },
-  { id: 'running', name: 'ריצה' }
+  { id: 'running', name: 'ריצה' },
+  { id: 'other', name: 'אימונים נוספים', categories: ['custom', 'stretching', 'recovery'] }
 ];
 
 const schedulePatterns = [
@@ -309,7 +335,7 @@ const WorkoutBuilder = () => {
 
         // שמירת האימון הקבוע בשרת
         try {
-          await fetch('/api/workouts/recurring', {
+          await fetch('http://localhost:3000/api/workouts', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

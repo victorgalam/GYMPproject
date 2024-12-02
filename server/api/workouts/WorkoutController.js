@@ -87,9 +87,23 @@ const createRecurringWorkout = async (req, res) => {
 // קבלת כל האימונים של המשתמש
 const getUserWorkouts = async (req, res) => {
     try {
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({
+                status: 'error',
+                message: 'משתמש לא מורשה'
+            });
+        }
+
         const userId = req.user._id;
         const workouts = await Workout.findUserWorkouts(userId);
         
+        if (!workouts) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'לא נמצאו אימונים'
+            });
+        }
+
         res.json({
             status: 'success',
             data: workouts
