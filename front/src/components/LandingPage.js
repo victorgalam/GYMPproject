@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { UserCircle, LogOut } from 'lucide-react';
 import { authService } from '../services/authService';
 import logo from '../source/pic/logo.png';
 
@@ -8,17 +7,13 @@ const LandingPage = () => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // פונקציה לבדיקת סטטוס המשתמש
     const checkAuthStatus = () => {
       const currentUser = authService.getCurrentUser();
-      console.log('Current user from authService:', currentUser);
       setUser(currentUser);
     };
 
-    // בדיקה ראשונית
     checkAuthStatus();
 
-    // הוספת מאזין לשינויים ב-localStorage
     const handleStorageChange = (e) => {
       if (e.key === 'user' || e.key === 'auth_token') {
         checkAuthStatus();
@@ -26,7 +21,6 @@ const LandingPage = () => {
     };
 
     window.addEventListener('storage', handleStorageChange);
-    // מאזין מיוחד לשינויים פנימיים
     window.addEventListener('auth-change', checkAuthStatus);
 
     return () => {
@@ -35,60 +29,8 @@ const LandingPage = () => {
     };
   }, []);
 
-  // Debug: בדיקת מצב הסטייט
-  useEffect(() => {
-    console.log('Current user state:', user);
-  }, [user]);
-
-  const handleLogout = () => {
-    authService.logout();
-    setUser(null);
-  };
-
-  // רנדור של תפריט למשתמש מחובר
-  const LoggedInMenu = () => (
-    <div className="flex items-center space-x-4 space-x-reverse">
-      <div className="flex items-center">
-        <UserCircle className="w-6 h-6 text-gray-600" />
-        <span className="mr-2 text-gray-600">{user?.username || user?.name || 'משתמש'}</span>
-      </div>
-      <Link to="/dashboard" className="px-4 py-2 text-gray-600 hover:text-gray-900 transition duration-200">
-        אזור אישי
-      </Link>
-      <button
-        onClick={handleLogout}
-        className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-900 transition duration-200"
-      >
-        <LogOut className="w-5 h-5 ml-2" />
-        התנתק
-      </button>
-    </div>
-  );
-
-  // רנדור של תפריט למשתמש לא מחובר
-  const GuestMenu = () => (
-    <div className="flex items-center space-x-4 space-x-reverse">
-      <Link to="/login" className="px-4 py-2 text-gray-600 hover:text-gray-900 transition duration-200">
-        התחברות
-      </Link>
-      <Link to="/register" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200">
-        הרשמה
-      </Link>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
-      {/* Navbar */}
-      <nav className="bg-white shadow-sm fixed w-full top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex h-16 items-center justify-between">
-            <span className="text-2xl font-bold text-blue-600">GYM</span>
-            {user ? <LoggedInMenu /> : <GuestMenu />}
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section - שונה בהתאם למצב המשתמש */}
       <section className="pt-24 pb-12 px-4 bg-gradient-to-b from-blue-50 to-white">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between">

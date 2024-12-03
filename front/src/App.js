@@ -40,37 +40,39 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
       <Router>
-        <div>
+        <div className="min-h-screen">
           <Navbar />
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/introduction" element={<Introduction />} />
-            <Route path="/locations" element={<LocationsMap />} />
-            
-            {/* Auth Routes */}
-            <Route path="/login" element={<UserLogin />} />
-            <Route path="/register" element={<UserRegister />} />
-            <Route path="/admin" element={<AdminLogin />} />
-            
-            {/* User Routes */}
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/user-panel" element={<UserPanel />} />
-            <Route path="/personal-details" element={<GymPersonalDetails />} />
-            <Route path="/recommendations" element={<GymRecommendations />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/videos" element={<WorkoutVideos />} />
-            <Route path="/workout-builder" element={<WorkoutBuilder />} />
-            <Route path="/workout-checklist/:workoutId" element={<WorkoutChecklist />} />
-            <Route path="/google-calendar" element={<GoogleCalendar />} />
-            <Route path="/workoutupdate/:workoutId" element={<WorkoutUpdate />} />
-            <Route path="/workout-start/:workoutId" element={<WorkoutStart />} />
-            
-            {/* Admin Routes */}
-            <Route path="/admin/panel" element={<AdminPanel />} />
-          </Routes>
+          <div className="pt-20">
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/introduction" element={<Introduction />} />
+              <Route path="/locations" element={<LocationsMap />} />
+              
+              {/* Auth Routes */}
+              <Route path="/login" element={<UserLogin />} />
+              <Route path="/register" element={<UserRegister />} />
+              <Route path="/admin" element={<AdminLogin />} />
+　　 　 　 　
+              {/* User Routes */}
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/user-panel" element={<UserPanel />} />
+              <Route path="/personal-details" element={<GymPersonalDetails />} />
+              <Route path="/recommendations" element={<GymRecommendations />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/videos" element={<WorkoutVideos />} />
+              <Route path="/workout-builder" element={<WorkoutBuilder />} />
+              <Route path="/workout-checklist/:workoutId" element={<WorkoutChecklist />} />
+              <Route path="/google-calendar" element={<GoogleCalendar />} />
+              <Route path="/workoutupdate/:workoutId" element={<WorkoutUpdate />} />
+              <Route path="/workout-start/:workoutId" element={<WorkoutStart />} />
+　　 　 　 　
+              {/* Admin Routes */}
+              <Route path="/admin/panel" element={<AdminPanel />} />
+            </Routes>
+          </div>
         </div>
       </Router>
     </GoogleOAuthProvider>
