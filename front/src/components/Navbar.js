@@ -1,15 +1,12 @@
-// src/components/Navbar.js
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // בדיקת משתמש מחובר בטעינת הקומפוננט
     const currentUser = authService.getCurrentUser();
     if (currentUser) {
       setUser(currentUser);
@@ -17,157 +14,83 @@ const Navbar = () => {
   }, []);
 
   const handleLogout = () => {
-    // שימוש בפונקציית ההתנתקות של authService
     authService.logout();
     setUser(null);
     navigate('/');
   };
 
   return (
-    <nav className="bg-gradient-to-r from-blue-600 to-blue-800 shadow-lg">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          {/* כפתור תפריט למובייל */}
-          <div className="md:hidden">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-white hover:text-blue-200 focus:outline-none"
+    <nav className="bg-gray-100 shadow-md py-4 px-6 flex items-center justify-between rtl">
+      <div className="flex items-center space-x-reverse space-x-4">
+        {user ? (
+          <>
+            <button 
+              onClick={handleLogout}
+              className="text-red-600 hover:text-red-700 transition-colors duration-300 font-medium px-4 py-2 rounded-lg hover:bg-red-50"
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {isOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
+              התנתק
             </button>
-          </div>
-
-          {/* תפריט דסקטופ */}
-          <div className="hidden md:flex items-center space-x-8 ml-auto">
             <Link 
               to="/" 
-              className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
+              className="text-gray-700 hover:text-gray-900 transition-colors duration-300 font-medium"
             >
               דף הבית
             </Link>
-            
-            {user ? (
-              // תצוגה למשתמש מחובר
-              <>
-                <span className="text-white font-medium">
-                  שלום, {user.username || user.name || 'משתמש'}
-                </span>
-                {user.role === 'admin' && (
-                  <Link 
-                    to="/admin/dashboard" 
-                    className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
-                  >
-                    ניהול
-                  </Link>
-                )}
-                <Link 
-                  to="/dashboard" 
-                  className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
-                >
-                  אזור אישי
-                </Link>
-                <Link 
-                  to="/videos" 
-                  className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
-                >
-                  סרטוני אימון
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
-                >
-                  התנתק
-                </button>
-              </>
-            ) : (
-              // תצוגה למשתמש לא מחובר
-              <>
-                <Link 
-                  to="/login" 
-                  className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
-                >
-                  התחברות
-                </Link>
-                <Link 
-                  to="/register" 
-                  className="text-white hover:text-blue-200 transition duration-300 text-lg font-medium"
-                >
-                  הרשמה
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* תפריט מובייל */}
-        <div className={`${isOpen ? 'block' : 'hidden'} md:hidden`}>
-          <div className="px-2 pt-2 pb-3 space-y-1 text-right">
             <Link 
-              to="/" 
-              className="block text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
+              to="/videos" 
+              className="text-gray-700 hover:text-gray-900 transition-colors duration-300 font-medium"
             >
-              דף הבית
+              סרטוני אימון
             </Link>
-            
-            {user ? (
-              // תצוגת מובייל למשתמש מחובר
-              <>
-                <div className="block text-white px-3 py-2 text-base font-medium">
-                  שלום, {user.username || user.name || 'משתמש'}
-                </div>
-                {user.role === 'admin' && (
-                  <Link 
-                    to="/admin/dashboard" 
-                    className="block text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
-                  >
-                    ניהול
-                  </Link>
-                )}
-                <Link 
-                  to="/dashboard" 
-                  className="block text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
-                >
-                  אזור אישי
-                </Link>
-                <Link 
-                  to="/videos" 
-                  className="block text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
-                >
-                  סרטוני אימון
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-right text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
-                >
-                  התנתק
-                </button>
-              </>
-            ) : (
-              // תצוגת מובייל למשתמש לא מחובר
-              <>
-                <Link 
-                  to="/login" 
-                  className="block text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
-                >
-                  התחברות
-                </Link>
-                <Link 
-                  to="/register" 
-                  className="block text-white hover:bg-blue-700 rounded-md px-3 py-2 text-base font-medium transition duration-300"
-                >
-                  הרשמה
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
+            <Link 
+              to="/locations" 
+              className="text-gray-700 hover:text-gray-900 transition-colors duration-300 font-medium"
+            >
+              מיקומים
+            </Link>
+            <Link 
+              to="/user-panel" 
+              className="text-gray-700 hover:text-gray-900 transition-colors duration-300 font-medium"
+            >
+              מערכת אימונים
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link 
+              to="/login" 
+              className="text-gray-700 hover:text-gray-900 transition-colors duration-300 font-medium"
+            >
+              התחברות
+            </Link>
+            <Link 
+              to="/register" 
+              className="text-gray-700 hover:text-gray-900 transition-colors duration-300 font-medium"
+            >
+              הרשמה
+            </Link>
+          </>
+        )}
       </div>
+
+      {user && (
+        <div className="flex items-center space-x-reverse space-x-3">
+          <div className="flex items-center space-x-reverse space-x-2">
+            <Link 
+              to="/personal-details"
+              className="text-gray-800 font-medium hover:text-gray-600 transition-colors duration-300 cursor-pointer"
+            >
+              {user.username || user.name || 'משתמש'}
+            </Link>
+            <Link
+              to="/personal-details"
+              className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold cursor-pointer hover:bg-gray-400 transition-colors duration-300"
+            >
+              {user.username ? user.username.charAt(0).toUpperCase() : 'א'}
+            </Link>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
