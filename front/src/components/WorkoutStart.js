@@ -12,22 +12,84 @@ const WorkoutStart = () => {
   const [workoutTimer, setWorkoutTimer] = useState(0);
   const [isWorkoutStarted, setIsWorkoutStarted] = useState(false);
   const [restTimer, setRestTimer] = useState(0);
+  const [restMilliseconds, setRestMilliseconds] = useState(0);
   const [isRestTimerActive, setIsRestTimerActive] = useState(false);
-  const [restDuration, setRestDuration] = useState(60); // Default rest duration
+  const [restDuration, setRestDuration] = useState(60);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [completedSets, setCompletedSets] = useState({});
-  const audioRef = useRef(new Audio('/notification.mp3'));
+  const audioContext = useRef(null);
+  const beepSound = useRef(null);
   const workoutTimerRef = useRef(null);
   const restTimerRef = useRef(null);
 
   useEffect(() => {
     fetchWorkout();
     return () => {
-      clearInterval(workoutTimerRef.current);
-      clearInterval(restTimerRef.current);
+      if (workoutTimerRef.current) {
+        clearInterval(workoutTimerRef.current);
+      }
+      if (restTimerRef.current) {
+        clearInterval(restTimerRef.current);
+      }
     };
   }, [workoutId]);
+
+  useEffect(() => {
+    // Initialize Audio Context
+    audioContext.current = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Create beep sound
+    const createBeep = (frequency = 880) => {
+      const oscillator = audioContext.current.createOscillator();
+      const gainNode = audioContext.current.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.current.destination);
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.value = frequency;
+      
+      gainNode.gain.value = 0.1;
+      
+      return { oscillator, gainNode };
+    };
+    
+    beepSound.current = createBeep;
+
+    return () => {
+      if (workoutTimerRef.current) {
+        clearInterval(workoutTimerRef.current);
+      }
+      if (restTimerRef.current) {
+        clearInterval(restTimerRef.current);
+      }
+    };
+  }, []);
+
+  const playBeep = (duration = 100, frequency = 880) => {
+    if (audioContext.current && audioContext.current.state === 'suspended') {
+      audioContext.current.resume();
+    }
+    
+    const { oscillator, gainNode } = beepSound.current(frequency);
+    
+    oscillator.start(audioContext.current.currentTime);
+    oscillator.stop(audioContext.current.currentTime + duration / 1000);
+    
+    // Cleanup
+    setTimeout(() => {
+      oscillator.disconnect();
+      gainNode.disconnect();
+    }, duration + 50);
+  };
+
+  const playFinishSound = () => {
+    // Play three beeps with different frequencies
+    playBeep(150, 880);  // High beep
+    setTimeout(() => playBeep(150, 660), 200);  // Medium beep
+    setTimeout(() => playBeep(250, 440), 400);  // Low beep
+  };
 
   const fetchWorkout = async () => {
     try {
@@ -106,12 +168,10 @@ const WorkoutStart = () => {
   };
 
   const startRestTimer = (exerciseIndex, setIndex) => {
-    // Stop any existing rest timer
     if (restTimerRef.current) {
       clearInterval(restTimerRef.current);
     }
 
-    // Update exercises to mark this set as completed and rest timer started
     setExercises(prevExercises => {
       const newExercises = [...prevExercises];
       newExercises[exerciseIndex].sets[setIndex] = {
@@ -121,18 +181,32 @@ const WorkoutStart = () => {
       return newExercises;
     });
 
-    // Start rest timer
     setRestTimer(restDuration);
+    setRestMilliseconds(99);
     setIsRestTimerActive(true);
     
+    // Milliseconds timer
+    const msTimer = setInterval(() => {
+      setRestMilliseconds(prev => {
+        if (prev <= 0) {
+          return 99;
+        }
+        return prev - 1;
+      });
+    }, 10);
+
+    // Seconds timer
     restTimerRef.current = setInterval(() => {
       setRestTimer(prev => {
         if (prev <= 1) {
           clearInterval(restTimerRef.current);
+          clearInterval(msTimer);
           setIsRestTimerActive(false);
-          audioRef.current.play();
+          setRestMilliseconds(0);
           
-          // Reset rest timer
+          // Play finish sound
+          playFinishSound();
+          
           setExercises(prevExercises => {
             const newExercises = [...prevExercises];
             newExercises[exerciseIndex].sets[setIndex].restTimerStarted = false;
@@ -140,6 +214,10 @@ const WorkoutStart = () => {
           });
           
           return 0;
+        }
+        // Play beep at last 3 seconds
+        if (prev <= 3) {
+          playBeep(100, 660); // Medium pitch for countdown
         }
         return prev - 1;
       });
@@ -303,19 +381,23 @@ const WorkoutStart = () => {
         </div>
 
         {/* Rest Timer and Controls - Fixed at bottom */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-4 border-t border-gray-200" style={{ zIndex: 1000 }}>
+        <div className="rest-timer-container fixed bottom-0 left-0 right-0 bg-white shadow-lg p-4 border-t border-gray-200" style={{ zIndex: 1000 }}>
           <div className="container mx-auto flex flex-col items-center gap-3">
             {isRestTimerActive && (
-              <div className="text-2xl font-bold text-blue-600">
-                זמן מנוחה: {restTimer} שניות
+              <div className="digital-clock text-5xl font-bold text-red-600" style={{ 
+                letterSpacing: "2px",
+                textShadow: "0 0 10px rgba(255, 0, 0, 0.3)"
+              }}>
+                <div className="seconds">{String(restTimer).padStart(2, '0')}</div>
+                <div className="milliseconds text-2xl">.{String(restMilliseconds).padStart(2, '0')}</div>
               </div>
             )}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap justify-center">
               <label className="font-medium">בחר זמן מנוחה:</label>
               <select 
                 value={restDuration} 
                 onChange={(e) => setRestDuration(Number(e.target.value))}
-                className="px-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               >
                 <option value={15}>15 שניות</option>
                 <option value={30}>30 שניות</option>
