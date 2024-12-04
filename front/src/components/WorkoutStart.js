@@ -23,6 +23,90 @@ const WorkoutStart = () => {
   const workoutTimerRef = useRef(null);
   const restTimerRef = useRef(null);
 
+  // Encouragement phrases
+  const encouragementPhrases = [
+    "כל הכבוד!",
+    "תותח!",
+    "חזק אתה!",
+    "יא חיה רעה!",
+    "ימלך!"
+  ];
+
+  // Get random encouragement phrase
+  const getRandomEncouragement = () => {
+    const randomIndex = Math.floor(Math.random() * encouragementPhrases.length);
+    return encouragementPhrases[randomIndex];
+  };
+
+  // Speech synthesis setup
+  const speakText = (text) => {
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Get available voices
+    const voices = window.speechSynthesis.getVoices();
+    
+    // Try to find a Hebrew voice
+    const hebrewVoice = voices.find(voice => 
+      voice.lang.includes('he') || 
+      voice.name.includes('Hebrew') || 
+      voice.name.includes('Microsoft David')
+    );
+
+    if (hebrewVoice) {
+      utterance.voice = hebrewVoice;
+    }
+
+    utterance.lang = 'he-IL';
+    utterance.rate = 0.85; // קצת יותר איטי
+    utterance.pitch = 1.1; // קצת יותר גבוה
+    utterance.volume = 1;
+
+    // Add event listener to handle voice loading
+    window.speechSynthesis.onvoiceschanged = () => {
+      const updatedVoices = window.speechSynthesis.getVoices();
+      const updatedHebrewVoice = updatedVoices.find(voice => 
+        voice.lang.includes('he') || 
+        voice.name.includes('Hebrew') || 
+        voice.name.includes('Microsoft David')
+      );
+      
+      if (updatedHebrewVoice) {
+        utterance.voice = updatedHebrewVoice;
+      }
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => {
+    // Initialize voices when component mounts
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.speechSynthesis.getVoices();
+    };
+  }, []);
+
+  const announceNextExercise = (exerciseIndex) => {
+    if (exercises[exerciseIndex]) {
+      const exercise = exercises[exerciseIndex];
+      const sets = exercise.sets.length;
+      const reps = exercise.reps;
+      const weight = exercise.weight;
+
+      let announcement = `התרגיל הבא: ${exercise.name}`;
+      if (sets && reps) {
+        announcement += `. ${sets} סטים של ${reps} חזרות`;
+      }
+      if (weight > 0) {
+        announcement += `. משקל: ${weight} קילו`;
+      }
+
+      speakText(announcement);
+    }
+  };
+
   useEffect(() => {
     fetchWorkout();
     return () => {
@@ -129,6 +213,9 @@ const WorkoutStart = () => {
     workoutTimerRef.current = setInterval(() => {
       setWorkoutTimer(prev => prev + 1);
     }, 1000);
+
+    // Announce first exercise
+    announceNextExercise(0);
   };
 
   const completeSet = (exerciseIndex, setIndex) => {
@@ -180,6 +267,25 @@ const WorkoutStart = () => {
       };
       return newExercises;
     });
+
+    // Announce next exercise if this was the last set
+    const currentExercise = exercises[exerciseIndex];
+    const isLastSet = setIndex === currentExercise.sets.length - 1;
+    const hasNextExercise = exerciseIndex < exercises.length - 1;
+
+    if (isLastSet) {
+      // Say random encouragement phrase
+      setTimeout(() => {
+        speakText(getRandomEncouragement());
+      }, 500);
+
+      if (hasNextExercise) {
+        // Wait a bit before announcing next exercise
+        setTimeout(() => {
+          announceNextExercise(exerciseIndex + 1);
+        }, 2000); // Wait longer to let the encouragement finish
+      }
+    }
 
     setRestTimer(restDuration);
     setRestMilliseconds(99);
@@ -236,6 +342,8 @@ const WorkoutStart = () => {
     if (currentExerciseIndex < exercises.length - 1) {
       setCurrentExerciseIndex(prev => prev + 1);
       setCurrentSetIndex(0);
+      // Announce next exercise
+      announceNextExercise(currentExerciseIndex + 1);
     }
   };
 
@@ -268,8 +376,13 @@ const WorkoutStart = () => {
         throw new Error('שגיאה בשמירת האימון');
       }
 
-      alert('האימון הושלם בהצלחה!');
-      navigate('/user-panel');
+      // Say final encouragement
+      speakText("סיימת את האימון! " + getRandomEncouragement());
+      
+      setTimeout(() => {
+        alert('האימון הושלם בהצלחה!');
+        navigate('/user-panel');
+      }, 1500);
     } catch (err) {
       alert(err.message);
     }
