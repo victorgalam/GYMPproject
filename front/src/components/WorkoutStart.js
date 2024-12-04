@@ -13,6 +13,7 @@ const WorkoutStart = () => {
   const [isWorkoutStarted, setIsWorkoutStarted] = useState(false);
   const [restTimer, setRestTimer] = useState(0);
   const [isRestTimerActive, setIsRestTimerActive] = useState(false);
+  const [restDuration, setRestDuration] = useState(60); // Default rest duration
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
   const [completedSets, setCompletedSets] = useState({});
@@ -121,7 +122,7 @@ const WorkoutStart = () => {
     });
 
     // Start rest timer
-    setRestTimer(60);
+    setRestTimer(restDuration);
     setIsRestTimerActive(true);
     
     restTimerRef.current = setInterval(() => {
@@ -218,12 +219,6 @@ const WorkoutStart = () => {
           </div>
         </div>
 
-        {isRestTimerActive && (
-          <div className="bg-blue-100 text-center p-4 rounded-lg mb-4">
-            מנוחה: {restTimer} שניות נותרו
-          </div>
-        )}
-
         {!isWorkoutStarted ? (
           <button
             onClick={startWorkout}
@@ -263,16 +258,12 @@ const WorkoutStart = () => {
 
               <div className="flex flex-wrap gap-2 mb-3">
                 {exercise.sets.map((set, setIndex) => {
-                  // Determine if the set can be completed
                   const canComplete = 
                     isWorkoutStarted && 
                     !set.completed && 
                     (
-                      // Current exercise and set
                       (exerciseIndex === currentExerciseIndex && setIndex === currentSetIndex) ||
-                      // Future sets in the same exercise
                       (exerciseIndex === currentExerciseIndex && setIndex > currentSetIndex) ||
-                      // Sets in future exercises
                       (exerciseIndex > currentExerciseIndex)
                     );
 
@@ -309,6 +300,33 @@ const WorkoutStart = () => {
           >
             סיים אימון
           </button>
+        </div>
+
+        {/* Rest Timer and Controls - Fixed at bottom */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-4 border-t border-gray-200" style={{ zIndex: 1000 }}>
+          <div className="container mx-auto flex flex-col items-center gap-3">
+            {isRestTimerActive && (
+              <div className="text-2xl font-bold text-blue-600">
+                זמן מנוחה: {restTimer} שניות
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <label className="font-medium">בחר זמן מנוחה:</label>
+              <select 
+                value={restDuration} 
+                onChange={(e) => setRestDuration(Number(e.target.value))}
+                className="px-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value={15}>15 שניות</option>
+                <option value={30}>30 שניות</option>
+                <option value={45}>45 שניות</option>
+                <option value={60}>60 שניות</option>
+                <option value={75}>75 שניות</option>
+                <option value={90}>90 שניות</option>
+                <option value={120}>2 דקות</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
     </div>
