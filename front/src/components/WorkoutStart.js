@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
+import { completedWorkoutService } from '../services/completedWorkoutService';
 
 const WorkoutStart = () => {
   const { workoutId } = useParams();
@@ -177,6 +178,9 @@ const WorkoutStart = () => {
 
   const fetchWorkout = async () => {
     try {
+      console.log('=== Fetch Workout Auth Check ===');
+      console.log('Token:', authService.getToken());
+      
       const response = await fetch(`http://localhost:3000/api/workouts/${workoutId}`, {
         headers: {
           'Authorization': `Bearer ${authService.getToken()}`
@@ -359,32 +363,15 @@ const WorkoutStart = () => {
       clearInterval(workoutTimerRef.current);
       clearInterval(restTimerRef.current);
       
-      const response = await fetch(`http://localhost:3000/api/workouts/${workoutId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authService.getToken()}`
-        },
-        body: JSON.stringify({
-          exercises: exercises,
-          status: 'completed',
-          duration: workoutTimer
-        })
+      const completedWorkout = await completedWorkoutService.completeWorkout(workoutId, {
+        exercises: exercises
       });
 
-      if (!response.ok) {
-        throw new Error('שגיאה בשמירת האימון');
-      }
-
-      // Say final encouragement
-      speakText("סיימת את האימון! " + getRandomEncouragement());
-      
-      setTimeout(() => {
-        alert('האימון הושלם בהצלחה!');
-        navigate('/user-panel');
-      }, 1500);
-    } catch (err) {
-      alert(err.message);
+      alert('כל הכבוד! סיימת את האימון בהצלחה!');
+      navigate('/workouts');
+    } catch (error) {
+      console.error('Error completing workout:', error);
+      alert('אירעה שגיאה בשמירת האימון: ' + error.message);
     }
   };
 

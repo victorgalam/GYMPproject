@@ -32,6 +32,7 @@ app.use('/api/users', require('./api/User/UserRoute'));
 app.use('/api/personal-details', require('./api/PersonalDetails/PersonalDetailsRoute'));
 // app.use('/api/exercise', require('./api/exercise/exerciseRoute'));
 app.use('/api/workouts', require('./api/workouts/WorkoutRoute'));
+app.use('/api/completed-workout', require('./api/workouts/CompletedWorkoutRoute')); // הוספת נתיב לאימונים שהושלמו
 
 // MongoDB connection
 const OPT = {

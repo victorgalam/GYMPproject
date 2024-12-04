@@ -38,7 +38,7 @@ const LandingPage = () => {
             {user ? (
               <>
                 <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                  ברוך הבא בחזרה, {user?.username || user?.name || 'משתמש'}!
+                  ברוך הבא , {user?.username || user?.name || 'משתמש'}!
                 </h1>
                 <p className="text-xl text-gray-600 mb-8">
                   המשך את המסע שלך לעבר המטרות שלך
