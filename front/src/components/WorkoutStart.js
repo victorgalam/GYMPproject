@@ -368,7 +368,7 @@ const WorkoutStart = () => {
       });
 
       alert('כל הכבוד! סיימת את האימון בהצלחה!');
-      navigate('/workouts');
+      navigate('/user-panel');
     } catch (error) {
       console.error('Error completing workout:', error);
       alert('אירעה שגיאה בשמירת האימון: ' + error.message);
