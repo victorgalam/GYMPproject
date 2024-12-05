@@ -94,9 +94,132 @@ const userController = {
         }
     },
 
-    // נמחק את authenticateToken כי הוא עבר ל-middleware
+    // התחברות מנהל
+    adminLogin: async (req, res) => {
+        try {
+            console.log('Admin login attempt>>>>>>> ', req.body);
+            const { username, password } = req.body;
+            console.log('Admin login attempt for:', username);
 
-    // נמחק את isAdmin כי הוא עבר ל-middleware
+            const admin = await User.findOne({
+                username: username,
+                role: 'admin'
+            }).select('+password');
+
+            if (!admin || !(await bcrypt.compare(password, admin.password))) {
+                return res.status(401).json({
+                    status: 'error',
+                    message: 'שם משתמש או סיסמה של מנהל לא נכונים'
+                });
+            }
+
+            const token = jwt.sign(
+                { 
+                    id: admin._id,
+                    username: admin.username,
+                    role: admin.role
+                },
+                JWT_SECRET,
+                { expiresIn: JWT_EXPIRES_IN }
+            );
+
+            // תיעוד ההתחברות
+            await Login.create({
+                user: admin._id,
+                timestamp: new Date(),
+                ip: req.ip,
+                userAgent: req.headers['user-agent']
+            });
+            
+            // שליחת תגובה עם הטוקן
+            res.status(200).json({
+                status: 'success',
+                data: {
+                    user: {
+                        id: admin._id,
+                        username: admin.username,
+                        role: admin.role
+                    },
+                    token
+                }
+            });
+        } catch (error) {
+            console.error('Admin login error:', error);
+            res.status(500).json({
+                status: 'error',
+                message: 'שגיאת התחברות מנהל'
+            });
+        }
+    },
+
+    // הרשמת מנהל
+    adminRegister: async (req, res) => {
+        try {
+            const { username, password } = req.body;
+
+            // בדיקה אם המשתמש כבר קיים
+            const existingUser = await User.findOne({ 
+                $or: [
+                    { username: username },
+                    { email: username }
+                ]
+            });
+
+            if (existingUser) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'משתמש עם שם זה כבר קיים'
+                });
+            }
+
+            // יצירת משתמש מנהל חדש
+            const newAdmin = await User.create({
+                username: username,
+                password: password,
+                role: 'admin',
+                isAdmin: true,
+                email: `${username}@admin.system` // יצירת אימייל דמה למנהל
+            });
+
+            // יצירת טוקן
+            const token = jwt.sign(
+                { 
+                    id: newAdmin._id,
+                    username: newAdmin.username,
+                    role: newAdmin.role
+                },
+                JWT_SECRET,
+                { expiresIn: JWT_EXPIRES_IN }
+            );
+
+            // תיעוד ההתחברות
+            await Login.create({
+                user: newAdmin._id,
+                timestamp: new Date(),
+                ip: req.ip,
+                userAgent: req.headers['user-agent']
+            });
+            
+            res.status(201).json({
+                status: 'success',
+                data: {
+                    user: {
+                        id: newAdmin._id,
+                        username: newAdmin.username,
+                        role: newAdmin.role
+                    },
+                    token
+                }
+            });
+        } catch (error) {
+            console.error('Admin registration error:', error);
+            res.status(500).json({
+                status: 'error',
+                message: 'שגיאה ביצירת משתמש מנהל',
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    },
 
     createMyPersonalDetails: async (req, res) => {
         try {

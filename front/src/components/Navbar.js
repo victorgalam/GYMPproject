@@ -5,6 +5,7 @@ import { FaCloud, FaSignOutAlt } from 'react-icons/fa';
 
 const Navbar = () => {
   const [user, setUser] = useState(null);
+  const [showLoginDropdown, setShowLoginDropdown] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,6 +28,7 @@ const Navbar = () => {
 
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('auth-change', handleAuthChange);
+console.log({user});
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
@@ -59,6 +61,7 @@ const Navbar = () => {
             
             {/* Right side */}
             <div className="flex items-center space-x-6 space-x-reverse">
+              {user?.role==="admin" && <Link to="/admin/panel" className="text-gray-300 hover:text-white" >ניהול אתר </Link>}
               <Link to="/videos" className="text-gray-300 hover:text-white">סרטוני אימון</Link>
               <div className="h-6 w-px bg-gray-600"></div>
               <Link to="/locations" className="text-gray-300 hover:text-white">מיקומים</Link>
@@ -88,12 +91,37 @@ const Navbar = () => {
                 הרשמה
               </Link>
               <div className="w-px h-6 bg-slate-600"></div>
-              <Link 
-                to="/login" 
-                className="px-4 py-2 text-white hover:text-blue-200 transition-colors duration-300"
-              >
-                התחברות
-              </Link>
+              <div className="relative">
+                <button 
+                  onClick={() => setShowLoginDropdown(!showLoginDropdown)}
+                  className="px-4 py-2 text-white hover:text-blue-200 transition-colors duration-300 flex items-center"
+                >
+                  התחברות
+                </button>
+                {showLoginDropdown && (
+                  <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                    <div className="py-1">
+                      <Link
+                        to="/login"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setShowLoginDropdown(false)}
+                      >
+                        התחברות משתמש
+                      </Link>
+                      <Link
+                        to="/admin"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => {
+                          navigate('/admin');
+                          setShowLoginDropdown(false);
+                        }}
+                      >
+                        התחברות מנהל
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center space-x-reverse space-x-4">
               <Link 

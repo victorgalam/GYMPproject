@@ -1,7 +1,6 @@
 // src/components/AdminLogin.js
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {api} from '../services/authService';
 import { authService } from '../services/authService';
 
 const AdminLogin = ({ onLoginSuccess }) => {
@@ -9,25 +8,35 @@ const AdminLogin = ({ onLoginSuccess }) => {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
+    useEffect(() => {
+        return () => {
+            setCredentials({ username: '', password: '' });
+            setError('');
+        };
+    },[]);
+
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await api.post('/admin/login', credentials);
-            const { token, role } = response.data.data;
+            const response = await authService.adminLogin(credentials);
             
-            // שמירת הטוקן והרול
-            authService.setToken(token);
-            authService.setUserRole(role);
-            
-            // הפעלת קולבק אם קיים
-            if (onLoginSuccess) {
-                onLoginSuccess({ token, role });
+            if (response.status === 'success') {
+                // שמירת הטוקן והרול
+                const { token, role } = response.data;
+                authService.setToken(token);
+                authService.setUserRole(role);
+                
+                // הפעלת קולבק אם קיים
+                if (onLoginSuccess) {
+                    onLoginSuccess({ token, role });
+                }
+                
+                // ניווט לדף מנהל לאחר התחברות מוצלחת
+                navigate('/admin/panel');
             }
-            
-            // ניווט לדף המנהל
-            navigate('/admin/dashboard');
         } catch (error) {
-            setError(error.response?.data?.message || 'שגיאה בהתחברות');
+            setError(error.message || 'שגיאה בהתחברות');
         }
     };
 

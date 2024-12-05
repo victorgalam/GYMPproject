@@ -151,6 +151,91 @@ const authService = {
         }
     },
 
+    // התחברות מנהל
+    adminLogin: async (credentials) => {
+        try {
+            const response = await api.post('/admin/login', credentials);
+            
+            if (response.status === 'success') {
+                const { token, user } = response.data;
+                
+                if (token) {
+                    localStorage.setItem(TOKEN_KEY, token);
+                    localStorage.setItem('admin_token', token);
+                }
+                if (user) {
+                    localStorage.setItem(USER_KEY, JSON.stringify(user));
+                    localStorage.setItem('admin_user', JSON.stringify(user));
+                }
+                notifyAuthChange(); // הודעה על שינוי בהתחברות
+
+                return {
+                    status: 'success',
+                    data: user,
+                    role: 'admin'
+                };
+            }
+            
+            throw new Error('תגובת שרת לא תקינה');
+            
+        } catch (error) {
+            if (error.response?.status === 401) {
+                throw {
+                    status: 'error',
+                    code: 'INVALID_ADMIN_CREDENTIALS',
+                    message: 'שם משתמש או סיסמה של מנהל שגויים'
+                };
+            }
+
+            throw {
+                status: 'error',
+                code: error.code || 'ADMIN_LOGIN_FAILED',
+                message: error.message || 'שגיאה בתהליך התחברות מנהל',
+                details: error.response?.data || error
+            };
+        }
+    },
+
+    // הרשמת מנהל
+    adminRegister: async (adminData) => {
+        try {
+            const response = await api.post('/admin/register', {
+                ...adminData,
+                role: 'admin'
+            });
+            
+            if (response.status === 'success') {
+                const { token, user } = response.data;
+                
+                if (token) {
+                    localStorage.setItem(TOKEN_KEY, token);
+                    localStorage.setItem('admin_token', token);
+                }
+                if (user) {
+                    localStorage.setItem(USER_KEY, JSON.stringify(user));
+                    localStorage.setItem('admin_user', JSON.stringify(user));
+                }
+                notifyAuthChange(); // הודעה על שינוי בהתחברות
+
+                return {
+                    status: 'success',
+                    data: user,
+                    role: 'admin'
+                };
+            }
+            
+            throw new Error('תגובת שרת לא תקינה');
+            
+        } catch (error) {
+            throw {
+                status: 'error',
+                code: error.code || 'ADMIN_REGISTER_FAILED',
+                message: error.message || 'שגיאה בתהליך הרשמת מנהל',
+                details: error.response?.data || error
+            };
+        }
+    },
+
     // התנתקות
     logout: async () => {
         try {
@@ -165,11 +250,32 @@ const authService = {
         }
     },
 
+    // התנתקות מנהל
+    adminLogout: async () => {
+        try {
+            await api.post('/admin/logout');
+        } catch (error) {
+            console.warn('Admin logout request failed:', error);
+        } finally {
+            localStorage.removeItem('admin_token');
+            localStorage.removeItem('admin_user');
+            notifyAuthChange();
+            window.location.replace('/admin');
+        }
+    },
+
     // בדיקה אם המשתמש מחובר
     isAuthenticated: () => {
         const token = localStorage.getItem(TOKEN_KEY);
         const user = localStorage.getItem(USER_KEY);
         return !!(token && user);
+    },
+
+    // בדיקה אם המנהל מחובר
+    isAdminAuthenticated: () => {
+        const adminToken = localStorage.getItem('admin_token');
+        const adminUser = localStorage.getItem('admin_user');
+        return !!(adminToken && adminUser);
     },
 
     // קבלת המשתמש הנוכחי
@@ -181,6 +287,20 @@ const authService = {
             console.error('Error parsing user data:', error);
             localStorage.removeItem(USER_KEY);
             notifyAuthChange(); // הודעה על שינוי בהתחברות במקרה של שגיאה
+            return null;
+        }
+    },
+
+    // קבלת משתמש מנהל נוכחי
+    getCurrentAdmin: () => {
+        try {
+            const adminUserStr = localStorage.getItem('admin_user');
+            return adminUserStr ? JSON.parse(adminUserStr) : null;
+        } catch (error) {
+            console.error('Error parsing admin user data:', error);
+            localStorage.removeItem('admin_user');
+            localStorage.removeItem('admin_token');
+            notifyAuthChange();
             return null;
         }
     },
