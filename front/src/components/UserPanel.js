@@ -344,7 +344,7 @@ const Home = () => {
                   </button>
                   <button
                     onClick={() => navigateToWorkoutUpdate(workout._id)}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded ml-2"
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded ml-2"
                   >
                     ערוך
                   </button>
