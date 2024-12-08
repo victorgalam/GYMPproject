@@ -480,11 +480,11 @@ const WorkoutStart = () => {
           </button>
         </div>
 
-        {/* Rest Timer and Controls - Fixed at bottom */}
-        <div className="rest-timer-container fixed bottom-0 left-0 right-0 bg-white shadow-lg p-4 border-t border-gray-200" style={{ zIndex: 1000 }}>
-          <div className="container mx-auto flex flex-col items-center gap-3">
+        {/* Rest Timer and Controls - Sticky at bottom */}
+        <div className="rest-timer-container sticky bottom-0 z-50 bg-white/90 backdrop-blur-sm shadow-md border-t border-gray-200 py-3 px-4 w-full">
+          <div className="container mx-auto flex flex-col items-center gap-3 max-w-screen-lg">
             {isRestTimerActive && (
-              <div className="digital-clock text-5xl font-bold text-red-600" style={{ 
+              <div className="digital-clock text-4xl sm:text-5xl font-bold text-red-600 w-full text-center" style={{ 
                 letterSpacing: "2px",
                 textShadow: "0 0 10px rgba(255, 0, 0, 0.3)"
               }}>
@@ -492,12 +492,12 @@ const WorkoutStart = () => {
                 <div className="milliseconds text-2xl">.{String(restMilliseconds).padStart(2, '0')}</div>
               </div>
             )}
-            <div className="flex items-center gap-3 flex-wrap justify-center">
-              <label className="font-medium">בחר זמן מנוחה:</label>
+            <div className="flex items-center gap-3 flex-wrap justify-center w-full">
+              <label className="font-medium text-sm sm:text-base">בחר זמן מנוחה:</label>
               <select 
                 value={restDuration} 
                 onChange={(e) => setRestDuration(Number(e.target.value))}
-                className="px-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="px-2 py-1 sm:px-3 sm:py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               >
                 <option value={15}>15 שניות</option>
                 <option value={30}>30 שניות</option>
