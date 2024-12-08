@@ -24,7 +24,7 @@ function UserLogin() {
 
                 // Check if user is admin
                 if (user.role === 'admin') {
-                    navigate('/admin/dashboard');
+                    navigate('/admin/panel');
                     return;
                 }
 
