@@ -10,6 +10,6 @@ router.post('/complete/:workoutId', auth, CompletedWorkoutController.completeWor
 router.get('/completed', auth, CompletedWorkoutController.getUserCompletedWorkouts);
 
 // קבלת סטטיסטיקות אימונים
-router.get('/stats', auth, CompletedWorkoutController.getUserStats);
+router.get('/stats', auth, CompletedWorkoutController.getWorkoutStats);
 
 module.exports = router;

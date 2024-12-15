@@ -192,69 +192,66 @@ const WorkoutStart = () => {
       }
 
       const data = await response.json();
+      console.log('Fetched workout data:', data);
       setWorkout(data.data);
       
-      // Ensure exercises and sets are properly initialized
+      // Initialize exercises with proper set structure
       const processedExercises = data.data.exercises.map(exercise => ({
         ...exercise,
+        exerciseId: exercise.id, // שמירת ה-id כ-exerciseId
         completed: false,
         sets: Array.from({ length: exercise.sets || 3 }, () => ({
+          reps: exercise.reps || 0,
+          weight: exercise.weight || 0,
           completed: false,
           restTimerStarted: false
         }))
       }));
 
+      console.log('Processed exercises:', processedExercises);
       setExercises(processedExercises);
       setLoading(false);
     } catch (err) {
+      console.error('Error fetching workout:', err);
       setError(err.message);
       setLoading(false);
     }
   };
 
-  const startWorkout = () => {
-    setIsWorkoutStarted(true);
-    workoutTimerRef.current = setInterval(() => {
-      setWorkoutTimer(prev => prev + 1);
-    }, 1000);
-
-    // Announce first exercise
-    announceNextExercise(0);
-  };
-
   const completeSet = (exerciseIndex, setIndex) => {
-    // Update completed sets tracking
+    console.log(`Completing set ${setIndex} for exercise ${exerciseIndex}`);
+    
     setCompletedSets(prev => ({
       ...prev,
       [`${exerciseIndex}-${setIndex}`]: true
     }));
 
-    // Update exercises to mark this set as completed
     setExercises(prevExercises => {
       const newExercises = [...prevExercises];
+      const currentExercise = newExercises[exerciseIndex];
+      
+      // עדכון נתוני הסט עם הערכים המקוריים מהתרגיל
       newExercises[exerciseIndex].sets[setIndex] = {
+        reps: currentExercise.reps || 0,
+        weight: currentExercise.weight || 0,
         completed: true,
         restTimerStarted: true
       };
 
-      // Check if all sets in this exercise are completed
+      // בדיקה אם כל הסטים הושלמו
       const allSetsCompleted = newExercises[exerciseIndex].sets.every(set => set.completed);
-      
       if (allSetsCompleted) {
-        // Mark the entire exercise as completed
         newExercises[exerciseIndex].completed = true;
-
-        // If not the last exercise, move to next exercise
         if (exerciseIndex < newExercises.length - 1) {
           setCurrentExerciseIndex(exerciseIndex + 1);
           setCurrentSetIndex(0);
         }
       }
 
+      console.log('Updated exercise:', newExercises[exerciseIndex]);
       return newExercises;
     });
 
-    // Start rest timer for this set
     startRestTimer(exerciseIndex, setIndex);
   };
 
@@ -363,10 +360,51 @@ const WorkoutStart = () => {
       clearInterval(workoutTimerRef.current);
       clearInterval(restTimerRef.current);
       
-      const completedWorkout = await completedWorkoutService.completeWorkout(workoutId, {
-        exercises: exercises
+      // וידוא שיש לנו את כל הנתונים הנדרשים
+      const validExercises = exercises.filter(exercise => {
+        if (!exercise.exerciseId || !exercise.name) {
+          console.error('Missing required fields for exercise:', exercise);
+          return false;
+        }
+        return true;
       });
 
+      if (validExercises.length === 0) {
+        throw new Error('לא נמצאו תרגילים תקינים לשמירה');
+      }
+
+      // הכנת הנתונים בפורמט הנכון לשרת
+      const completedExercises = validExercises.map(exercise => {
+        // סינון רק סטים שהושלמו עם נתונים תקינים
+        const validSets = exercise.sets
+          .filter(set => set.completed)
+          .map(set => ({
+            reps: set.reps || exercise.reps || 0,
+            weight: set.weight || exercise.weight || 0,
+            completed: true
+          }));
+
+        if (validSets.length === 0) {
+          console.warn('No completed sets for exercise:', exercise.name);
+        }
+
+        return {
+          exerciseId: exercise.exerciseId,
+          name: exercise.name,
+          sets: validSets
+        };
+      });
+
+      console.log('Sending completed workout data:', {
+        exercises: completedExercises
+      });
+
+      const completedWorkout = await completedWorkoutService.completeWorkout(workoutId, {
+        exercises: completedExercises,
+        endTime: new Date().toISOString()
+      });
+
+      console.log('Workout completed successfully:', completedWorkout);
       alert('כל הכבוד! סיימת את האימון בהצלחה!');
       navigate('/user-panel');
     } catch (error) {
@@ -377,6 +415,16 @@ const WorkoutStart = () => {
 
   const navigateToWorkoutUpdate = () => {
     navigate(`/workout-update/${workoutId}`);
+  };
+
+  const startWorkout = () => {
+    setIsWorkoutStarted(true);
+    workoutTimerRef.current = setInterval(() => {
+      setWorkoutTimer(prev => prev + 1);
+    }, 1000);
+
+    // Announce first exercise
+    announceNextExercise(0);
   };
 
   if (loading) {

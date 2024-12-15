@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GoogleCalendar from './GoogleCalendar';
 import { authService } from '../services/authService';
-
-const API_BASE_URL = 'http://localhost:3000';
+import WorkoutHistory from './WorkoutHistory';
+import { API_BASE_URL } from '../config';
 
 const defaultWorkoutPlan = [
   { day: "ראשון", workouts: [] },
@@ -19,12 +19,16 @@ const DesktopHome = () => {
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('general');
   const [workouts, setWorkouts] = useState([]);
+  const [completedWorkouts, setCompletedWorkouts] = useState([]); // הוספת state חדש
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchWorkoutPlan();
-  }, []);
+    if (selectedTab === 'history') {
+      fetchCompletedWorkouts();
+    }
+  }, [selectedTab]);
 
   const fetchWorkoutPlan = async () => {
     try {
@@ -62,6 +66,28 @@ const DesktopHome = () => {
       setError('לא ניתן לטעון את האימונים כרגע. אנא נסה שוב מאוחר יותר.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchCompletedWorkouts = async () => {
+    try {
+      console.log('מנסה להביא אימונים שהושלמו...');
+      const response = await fetch(`${API_BASE_URL}/api/completed-workout/completed`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      console.log('תשובה מהשרת:', response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('אימונים שהושלמו:', data);
+        setCompletedWorkouts(data);
+      } else {
+        const errorText = await response.text();
+        console.error('שגיאה בקבלת אימונים:', response.status, errorText);
+      }
+    } catch (error) {
+      console.error('שגיאה בקבלת אימונים שהושלמו:', error);
     }
   };
 
@@ -326,7 +352,6 @@ const DesktopHome = () => {
           >
             תוכנית אימונים
           </button>
-          
           <button
             className={`px-4 py-2 rounded-lg ${
               selectedTab === 'calendar' 
@@ -336,6 +361,16 @@ const DesktopHome = () => {
             onClick={() => setSelectedTab('calendar')}
           >
             יומן
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg ${
+              selectedTab === 'history' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+            onClick={() => setSelectedTab('history')}
+          >
+            היסטוריית אימונים
           </button>
         </div>
       </div>
@@ -393,10 +428,12 @@ const DesktopHome = () => {
             );
           })}
         </div>
-      ) : (
+      ) : selectedTab === 'calendar' ? (
         <div className="bg-white rounded-lg shadow-md">
           <GoogleCalendar />
         </div>
+      ) : (
+        <WorkoutHistory />
       )}
     </div>
   );
@@ -406,12 +443,16 @@ const MobileHome = () => {
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('general');
   const [workouts, setWorkouts] = useState([]);
+  const [completedWorkouts, setCompletedWorkouts] = useState([]); // הוספת state חדש
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchWorkoutPlan();
-  }, []);
+    if (selectedTab === 'history') {
+      fetchCompletedWorkouts();
+    }
+  }, [selectedTab]);
 
   const fetchWorkoutPlan = async () => {
     try {
@@ -449,6 +490,28 @@ const MobileHome = () => {
       setError('לא ניתן לטעון את האימונים כרגע. אנא נסה שוב מאוחר יותר.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchCompletedWorkouts = async () => {
+    try {
+      console.log('מנסה להביא אימונים שהושלמו...');
+      const response = await fetch(`${API_BASE_URL}/api/completed-workout/completed`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      console.log('תשובה מהשרת:', response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('אימונים שהושלמו:', data);
+        setCompletedWorkouts(data);
+      } else {
+        const errorText = await response.text();
+        console.error('שגיאה בקבלת אימונים:', response.status, errorText);
+      }
+    } catch (error) {
+      console.error('שגיאה בקבלת אימונים שהושלמו:', error);
     }
   };
 
@@ -712,7 +775,6 @@ const MobileHome = () => {
           >
             תוכנית אימונים
           </button>
-          
           <button
             className={`flex-1 py-3 rounded-lg transition-all duration-300 ${
               selectedTab === 'calendar' 
@@ -722,6 +784,16 @@ const MobileHome = () => {
             onClick={() => setSelectedTab('calendar')}
           >
             יומן
+          </button>
+          <button
+            className={`flex-1 py-3 rounded-lg transition-all duration-300 ${
+              selectedTab === 'history' 
+                ? 'bg-blue-600 text-white shadow-md' 
+                : 'text-gray-700 hover:bg-gray-200'
+            }`}
+            onClick={() => setSelectedTab('history')}
+          >
+            היסטוריית אימונים
           </button>
         </div>
       </div>
@@ -797,10 +869,12 @@ const MobileHome = () => {
             );
           })}
         </div>
-      ) : (
+      ) : selectedTab === 'calendar' ? (
         <div className="bg-white rounded-lg shadow-md">
           <GoogleCalendar />
         </div>
+      ) : (
+        <WorkoutHistory />
       )}
     </div>
   );
