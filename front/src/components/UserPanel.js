@@ -227,8 +227,8 @@ const DesktopHome = () => {
 
   // פונקציה לפורמט שם תרגיל
   const formatExerciseName = (exercise) => {
-    if (!exercise || !exercise.name) return '';
-    return exercise.name.toString();
+    if (!exercise) return '';
+    return exercise.name || '';
   };
 
   // פונקציה לפורמט תאריך ושעה
@@ -257,6 +257,31 @@ const DesktopHome = () => {
       }
     });
     return Array.from(uniqueWorkouts.values());
+  };
+
+  const daysInHebrew = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
+  const formatWorkoutDateTime = (workout) => {
+    const date = new Date(workout.startDate);
+    const dayOfWeek = daysInHebrew[date.getDay()];
+    const formattedDate = date.toLocaleDateString('he-IL');
+    const startTime = new Date(workout.startDate).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    const endTime = new Date(workout.endDate).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    const duration = workout.duration;
+
+    return (
+      <div style={{ margin: '10px 0' }}>
+        <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>
+          <span>יום {dayOfWeek} - </span>
+          <span>{formattedDate}</span>
+        </div>
+        <div style={{ color: '#666', fontSize: '0.95em' }}>
+          <div>שעת התחלה: {startTime}</div>
+          <div>שעת סיום: {endTime}</div>
+          <div>משך האימון: {duration} דקות</div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -326,25 +351,19 @@ const DesktopHome = () => {
       {selectedTab === 'general' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {removeDuplicateWorkouts(sortWorkouts(workouts)).map((workout) => {
-            const startDateTime = formatDateTime(workout.startDate);
-            const endDateTime = formatDateTime(workout.endDate);
-            
             return (
               <div key={workout._id} className="bg-white shadow-lg rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-2">{workout.title || 'אימון ללא כותרת'}</h3>
-                <p className="text-gray-600 mb-4">{workout.description || 'אין תיאור'}</p>
-                <div className="text-sm text-gray-500">
-                  <p>תאריך: {startDateTime.date}</p>
-                  <p>שעת התחלה: {startDateTime.time}</p>
-                  <p>שעת סיום: {endDateTime.time}</p>
-                  <p>משך האימון: {workout.duration || 0} דקות</p>
-                </div>
+                <h3 className="text-xl font-semibold mb-2">
+                  אימון
+                </h3>
+                {formatWorkoutDateTime(workout)}
                 <div className="mt-4">
                   <h4 className="font-semibold mb-2">תרגילים:</h4>
                   <ul className="list-disc list-inside">
                     {Array.isArray(workout.exercises) && workout.exercises.map((exercise, index) => (
                       <li key={index} className="mb-1">
-                        {formatExerciseName(exercise)} - {exercise.sets || 0} סטים, {exercise.reps || 0} חזרות
+                        {exercise.name}
+                        {exercise.sets > 0 && exercise.reps > 0 && ` - ${exercise.sets} סטים, ${exercise.reps} חזרות`}
                         {exercise.weight > 0 && `, משקל: ${exercise.weight} ק"ג`}
                       </li>
                     ))}
@@ -595,8 +614,8 @@ const MobileHome = () => {
 
   // פונקציה לפורמט שם תרגיל
   const formatExerciseName = (exercise) => {
-    if (!exercise || !exercise.name) return '';
-    return exercise.name.toString();
+    if (!exercise) return '';
+    return exercise.name || '';
   };
 
   // פונקציה לפורמט תאריך ושעה
@@ -625,6 +644,31 @@ const MobileHome = () => {
       }
     });
     return Array.from(uniqueWorkouts.values());
+  };
+
+  const daysInHebrew = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
+  const formatWorkoutDateTime = (workout) => {
+    const date = new Date(workout.startDate);
+    const dayOfWeek = daysInHebrew[date.getDay()];
+    const formattedDate = date.toLocaleDateString('he-IL');
+    const startTime = new Date(workout.startDate).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    const endTime = new Date(workout.endDate).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    const duration = workout.duration;
+
+    return (
+      <div style={{ margin: '10px 0' }}>
+        <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>
+          <span>יום {dayOfWeek} - </span>
+          <span>{formattedDate}</span>
+        </div>
+        <div style={{ color: '#666', fontSize: '0.95em' }}>
+          <div>שעת התחלה: {startTime}</div>
+          <div>שעת סיום: {endTime}</div>
+          <div>משך האימון: {duration} דקות</div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -693,44 +737,31 @@ const MobileHome = () => {
       {selectedTab === 'general' ? (
         <div className="space-y-4">
           {removeDuplicateWorkouts(sortWorkouts(workouts)).map((workout) => {
-            const startDateTime = formatDateTime(workout.startDate);
-            const endDateTime = formatDateTime(workout.endDate);
-            
             return (
               <div 
                 key={workout._id} 
                 className="bg-white shadow-lg rounded-xl p-6 border-2 border-blue-50 hover:border-blue-100 transition-all duration-300"
               >
                 <h3 className="text-xl font-bold text-slate-800 mb-3">
-                  {workout.title || 'אימון ללא כותרת'}
+                  אימון
                 </h3>
                 
-                <div className="text-sm text-gray-600 mb-4 space-y-1">
-                  <p><strong>תאריך:</strong> {startDateTime.date}</p>
-                  <p><strong>שעת התחלה:</strong> {startDateTime.time}</p>
-                  <p><strong>שעת סיום:</strong> {endDateTime.time}</p>
-                  <p><strong>משך האימון:</strong> {workout.duration || 0} דקות</p>
-                </div>
+                {formatWorkoutDateTime(workout)}
 
-                {workout.description && (
-                  <p className="text-gray-700 italic mb-4">
-                    {workout.description}
-                  </p>
-                )}
-
-                <div className="mb-4">
-                  <h4 className="font-semibold mb-2 text-slate-700">תרגילים:</h4>
-                  <ul className="list-disc list-inside text-gray-700">
+                <div className="mt-4">
+                  <h4 className="font-semibold mb-2">תרגילים:</h4>
+                  <ul className="list-disc list-inside">
                     {Array.isArray(workout.exercises) && workout.exercises.map((exercise, index) => (
                       <li key={index} className="mb-1">
-                        {formatExerciseName(exercise)} - {exercise.sets || 0} סטים, {exercise.reps || 0} חזרות
+                        {exercise.name}
+                        {exercise.sets > 0 && exercise.reps > 0 && ` - ${exercise.sets} סטים, ${exercise.reps} חזרות`}
                         {exercise.weight > 0 && `, משקל: ${exercise.weight} ק"ג`}
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="flex justify-between space-x-2 mt-4">
+                <div className="mt-4 flex justify-end space-x-2">
                   <button
                     onClick={() => navigate(`/workout-start/${workout._id}`)}
                     className="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors duration-300 flex items-center justify-center space-x-2"
