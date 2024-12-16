@@ -69,7 +69,19 @@ const WorkoutBuilder = () => {
         return;
       }
 
+      // Validate exercises data size
+      const optimizedExercises = selectedExercises.map(exercise => ({
+        name: exercise.name,
+        sets: Number(exercise.sets) || 3,
+        reps: Number(exercise.reps) || 12,
+        weight: Number(exercise.weight) || 0,
+        type: exercise.type || 'weight',
+        notes: exercise.notes || ''
+      }));
+
       const workoutTitle = `אימון ${workoutTypes.find(t => t.id === workoutType)?.name || ''}`;
+      
+      // Create a more compact description
       const description = selectedExercises.map(exercise => {
         const metrics = getExerciseMetrics(exercise);
         return `${exercise.name}\n${metrics}`;
@@ -81,6 +93,24 @@ const WorkoutBuilder = () => {
 
       const endDateTime = new Date(startDateTime);
       endDateTime.setMinutes(endDateTime.getMinutes() + duration);
+
+      // Prepare request data
+      const requestData = {
+        title: workoutTitle,
+        description,
+        exercises: optimizedExercises,
+        startDate: startDateTime,
+        endDate: endDateTime,
+        duration,
+        frequency,
+        schedulePattern
+      };
+
+      // Validate request size
+      const requestSize = new Blob([JSON.stringify(requestData)]).size;
+      if (requestSize > 5000000) { // 5MB limit
+        throw new Error('האימון גדול מדי. נא להפחית את מספר התרגילים או את כמות הטקסט בהערות.');
+      }
 
       try {
         if (frequency === 'one-time') {
@@ -111,31 +141,27 @@ const WorkoutBuilder = () => {
           });
         }
 
-        // Save to server
-        const token = authService.getToken(); // Get token using authService
+        // Save to server with proper error handling
+        const token = authService.getToken();
         if (!token) {
           console.error('No auth token found');
           navigate('/login');
           return;
         }
 
-        await fetch('http://localhost:3000/api/workouts', {
+        const response = await fetch('http://localhost:3000/api/workouts', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({
-            title: workoutTitle,
-            description,
-            exercises: selectedExercises,
-            startDate: startDateTime,
-            endDate: endDateTime,
-            duration,
-            frequency,
-            schedulePattern
-          })
+          body: JSON.stringify(requestData)
         });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'שגיאה בשמירת האימון');
+        }
 
         alert(frequency === 'one-time' ? 'האימון נוסף בהצלחה!' : 'האימון הקבוע נוסף בהצלחה!');
         navigate(-1);
@@ -145,11 +171,12 @@ const WorkoutBuilder = () => {
           alert('נא להתחבר מחדש לחשבון Google');
           login();
         } else {
+          console.error('Error saving workout:', error);
           alert('אירעה שגיאה בשמירת האימון: ' + error.message);
         }
       }
     } catch (error) {
-      console.error('Error saving workout:', error);
+      console.error('Error in handleSaveWorkout:', error);
       alert('אירעה שגיאה בשמירת האימון: ' + error.message);
     }
   };

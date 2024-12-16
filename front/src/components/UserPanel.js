@@ -30,6 +30,18 @@ const DesktopHome = () => {
     }
   }, [selectedTab]);
 
+  // Add new effect to refresh workouts when component mounts or gains focus
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchWorkoutPlan();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
   const fetchWorkoutPlan = async () => {
     try {
       const token = authService.getToken();
@@ -453,6 +465,18 @@ const MobileHome = () => {
       fetchCompletedWorkouts();
     }
   }, [selectedTab]);
+
+  // Add new effect to refresh workouts when component mounts or gains focus
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchWorkoutPlan();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
   const fetchWorkoutPlan = async () => {
     try {
