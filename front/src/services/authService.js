@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api/users';
+const API_URL = process.env.NODE_ENV === 'production' 
+    ? '/api' 
+    : 'http://localhost:3000/api';
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user';
 

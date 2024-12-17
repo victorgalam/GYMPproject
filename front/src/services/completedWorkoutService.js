@@ -1,6 +1,10 @@
 import axios from 'axios';
 import { authService } from './authService';
 
+const API_URL = process.env.NODE_ENV === 'production' 
+    ? '/api/completed-workout' 
+    : 'http://localhost:3000/api/completed-workout';
+
 // יצירת instance חדש של axios עם ה-baseURL הנכון
 const api = axios.create({
   baseURL: 'http://localhost:3000/api',
@@ -28,7 +32,7 @@ export const completedWorkoutService = {
       console.log('Workout ID:', workoutId);
       console.log('Workout Data:', JSON.stringify(workoutData, null, 2));
 
-      const response = await api.post(`/completed-workout/complete/${workoutId}`, workoutData);
+      const response = await api.post(`${API_URL}/complete/${workoutId}`, workoutData);
       return response.data;
     } catch (error) {
       console.error('=== Debug Error ===');
@@ -46,7 +50,7 @@ export const completedWorkoutService = {
 
   async getCompletedWorkouts() {
     try {
-      const response = await api.get('/completed-workout/completed');
+      const response = await api.get(`${API_URL}/completed`);
       return response.data.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
     } catch (error) {
       console.error('Error fetching completed workouts:', error);
@@ -68,10 +72,10 @@ export const completedWorkoutService = {
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
 
-      const fullUrl = `http://localhost:3000/api/completed-workout/stats?${params}`;
+      const fullUrl = `${API_URL}/stats?${params}`;
       console.log('Full URL:', fullUrl);
 
-      const response = await api.get(`/completed-workout/stats?${params}`);
+      const response = await api.get(`${API_URL}/stats?${params}`);
 
       // בדיקת התגובה
       console.log('=== Debug Workout Stats Response ===');

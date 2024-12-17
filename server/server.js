@@ -1,13 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
 
 // Middleware
 const corsOptions = {
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    origin: ['http://localhost:3000', 'http://localhost:3001', process.env.FRONTEND_URL],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -27,6 +28,9 @@ app.use((req, res, next) => {
     next();
 });
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../front/build')));
+
 // Routes
 app.use('/api/users', require('./api/User/UserRoute'));
 app.use('/api/personal-details', require('./api/PersonalDetails/PersonalDetailsRoute'));
@@ -43,6 +47,11 @@ const OPT = {
 mongoose.connect(process.env.MONGODB_URI, OPT)
     .then(() => console.log("Connected to MongoDB"))
     .catch(err => console.error("MongoDB connection error:", err));
+
+// Handle React routing, return all requests to React app
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../front/build', 'index.html'));
+});
 
 // Error handling - כולל טיפול בשגיאות JWT
 app.use((err, req, res, next) => {

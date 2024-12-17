@@ -3,13 +3,15 @@
 import axios from 'axios';
 import { authService } from './authService';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = process.env.NODE_ENV === 'production' 
+    ? '/api/users' 
+    : 'http://localhost:3000/api/users';
 
 const userService = {
    // הרשמת משתמש חדש למערכת
    register: async (userData) => {
        try {
-           const response = await axios.post(`${API_URL}/users/register`, userData);
+           const response = await axios.post(`${API_URL}/register`, userData);
            return response.data;
        } catch (error) {
            console.error('Registration error:', error.response?.data || error);
@@ -43,7 +45,7 @@ const userService = {
    // קבלת כל המשתמשים (למנהלים)
    getUsers: async () => {
        try {
-           const response = await axios.get(`${API_URL}/users`);
+           const response = await axios.get(`${API_URL}`);
            return response.data;
        } catch (error) {
            console.error('Get users error:', error.response?.data || error);
@@ -54,7 +56,7 @@ const userService = {
    // יצירת משתמש חדש (למנהלים)
    createUser: async (userData) => {
        try {
-           const response = await axios.post(`${API_URL}/users`, userData);
+           const response = await axios.post(`${API_URL}`, userData);
            return response.data;
        } catch (error) {
            console.error('Create user error:', error.response?.data || error);
