@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { completedWorkoutService } from '../services/completedWorkoutService';
+import { workoutService } from '../services/workoutService';
 import { useAudio, useSpeech, formatTime, ENCOURAGEMENT_PHRASES } from './WorkoutStartSorses';
 
 const WorkoutStart = () => {
@@ -96,39 +97,23 @@ const WorkoutStart = () => {
   useEffect(() => {
     const fetchWorkout = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/workouts/${workoutId}`, {
-          headers: { 'Authorization': `Bearer ${authService.getToken()}` }
-        });
-        
-        if (!response.ok) throw new Error('שגיאה בטעינת האימון');
-        
-        const { data } = await response.json();
-        setWorkout(data);
-        
-        setExercises(data.exercises.map(e => ({
-          ...e,
-          exerciseId: e.id,
-          completed: false,
-          sets: Array(e.sets || 3).fill().map(() => ({
-            reps: e.reps || 0,
-            weight: e.weight || 0,
-            completed: false,
-            restTimerStarted: false
-          }))
-        })));
-        
-        setLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setLoading(false);
+        const response = await workoutService.getWorkoutById(workoutId);
+        if (response.data) {
+          setWorkout(response.data);
+          setExercises(response.data.exercises.map(exercise => ({
+            ...exercise,
+            sets: Array(exercise.sets).fill().map(() => ({ reps: exercise.reps, weight: exercise.weight, completed: false }))
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching workout:', error);
+        // Handle error appropriately
       }
     };
 
-    fetchWorkout();
-    return () => {
-      clearInterval(workoutTimerRef.current);
-      clearInterval(restTimerRef.current);
-    };
+    if (workoutId) {
+      fetchWorkout();
+    }
   }, [workoutId]);
 
   const handleFinishWorkout = async () => {
