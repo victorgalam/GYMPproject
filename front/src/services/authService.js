@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const BASE_URL = process.env.NODE_ENV === 'production'
-    ? 'https://young-ocean-77806.herokuapp.com/api'
+    ? 'https://young-ocean-77806-2eafe9f964ec.herokuapp.com/api'
     : 'http://localhost:3000/api';
 
 const API_URL = `${BASE_URL}/users`;

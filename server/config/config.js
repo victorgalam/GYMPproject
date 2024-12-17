@@ -6,7 +6,7 @@ module.exports = {
     NODE_ENV: process.env.NODE_ENV || 'development',
 
     // Database Configuration
-    DB_URI: process.env.DB_URI,
+    DB_URI: process.env.MONGODB_URI || process.env.DB_URI,
 
     // JWT Configuration
     JWT_SECRET: process.env.JWT_SECRET,
@@ -16,5 +16,7 @@ module.exports = {
     API_KEYS: process.env.API_KEYS ? process.env.API_KEYS.split(',') : [],
 
     // CORS Configuration
-    CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000'
+    CORS_ORIGIN: process.env.NODE_ENV === 'production'
+        ? ['https://young-ocean-77806-2eafe9f964ec.herokuapp.com']
+        : ['http://localhost:3000', 'http://localhost:3001']
 };
