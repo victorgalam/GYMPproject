@@ -1,51 +1,43 @@
-import axios from 'axios';
-import { authService } from './authService';
+import api from './api';
 
-const BASE_URL = process.env.NODE_ENV === 'production'
-    ? 'https://young-ocean-77806-2eafe9f964ec.herokuapp.com/api'
-    : 'http://localhost:3000/api';
-
-const API_URL = `${BASE_URL}/workouts`;
-
-// יצירת instance של axios עם הגדרות בסיסיות
-const api = axios.create({
-    baseURL: BASE_URL,
-    headers: {
-        'Content-Type': 'application/json'
-    }
-});
-
-// הוספת interceptor להוספת טוקן אוטומטית
-api.interceptors.request.use(
-    (config) => {
-        const token = authService.getToken();
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
-
-export const workoutService = {
-    async getWorkoutById(workoutId) {
+const workoutService = {
+    async createWorkout(workoutData) {
         try {
-            const response = await api.get(`${API_URL}/${workoutId}`);
+            console.log('Creating workout:', workoutData);
+            const response = await api.post('/api/workouts', workoutData);
             return response.data;
         } catch (error) {
-            console.error('Error fetching workout:', error);
+            console.error('Error creating workout:', error);
             throw error;
         }
     },
 
-    async getUserWorkouts() {
+    async getMyWorkouts() {
         try {
-            const response = await api.get(`${API_URL}/my`);
+            const response = await api.get('/api/workouts/my');
             return response.data;
         } catch (error) {
-            console.error('Error fetching user workouts:', error);
+            console.error('Error fetching workouts:', error);
+            throw error;
+        }
+    },
+
+    async updateWorkout(workoutId, workoutData) {
+        try {
+            const response = await api.put(`/api/workouts/${workoutId}`, workoutData);
+            return response.data;
+        } catch (error) {
+            console.error('Error updating workout:', error);
+            throw error;
+        }
+    },
+
+    async deleteWorkout(workoutId) {
+        try {
+            const response = await api.delete(`/api/workouts/${workoutId}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error deleting workout:', error);
             throw error;
         }
     }
