@@ -72,6 +72,9 @@ router.post('/recurring', protect, WorkoutController.createRecurringWorkout);
 router.get('/my', protect, WorkoutController.getUserWorkouts);
 router.get('/recurring', protect, WorkoutController.getUserRecurringWorkouts);
 
+// Delete all workouts route
+router.delete('/deleteAll', protect, WorkoutController.deleteAllWorkouts);
+
 // נתיבים לאימון ספציפי
 router.route('/:id')
     .get(protect, WorkoutController.getWorkoutById)

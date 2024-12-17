@@ -322,6 +322,32 @@ const DesktopHome = () => {
     );
   };
 
+  const handleDeleteAllWorkouts = async () => {
+    if (window.confirm('האם אתה בטוח שברצונך למחוק את כל האימונים?')) {
+      try {
+        const token = await authService.getToken();
+        const response = await fetch(`${API_BASE_URL}/api/workouts/deleteAll`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          setWorkouts([]); // Clear workouts from state
+          alert('כל האימונים נמחקו בהצלחה');
+        } else {
+          const error = await response.json();
+          alert(error.message || 'שגיאה במחיקת האימונים');
+        }
+      } catch (error) {
+        console.error('Error deleting all workouts:', error);
+        alert('שגיאה במחיקת האימונים');
+      }
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 hidden md:block" dir="rtl">
       <div className="space-y-4">
@@ -348,6 +374,13 @@ const DesktopHome = () => {
                 <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-1.2 17.55l-4.35-4.35 1.65-1.65 2.7 2.7 5.7-5.7 1.65 1.65-7.35 7.35z"/>
               </svg>
               פתח יומן Google
+            </button>
+            
+            <button
+              onClick={handleDeleteAllWorkouts}
+              className="bg-red-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-red-600 transition-colors duration-200"
+            >
+              מחק את כל האימונים
             </button>
           </div>
         </div>
@@ -756,6 +789,32 @@ const MobileHome = () => {
         </div>
       </div>
     );
+  };
+
+  const handleDeleteAllWorkouts = async () => {
+    if (window.confirm('האם אתה בטוח שברצונך למחוק את כל האימונים?')) {
+      try {
+        const token = await authService.getToken();
+        const response = await fetch(`${API_BASE_URL}/api/workouts/deleteAll`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          setWorkouts([]); // Clear workouts from state
+          alert('כל האימונים נמחקו בהצלחה');
+        } else {
+          const error = await response.json();
+          alert(error.message || 'שגיאה במחיקת האימונים');
+        }
+      } catch (error) {
+        console.error('Error deleting all workouts:', error);
+        alert('שגיאה במחיקת האימונים');
+      }
+    }
   };
 
   return (

@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const completedExerciseSchema = new mongoose.Schema({
     exerciseId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Exercise',
         required: true
     },
     name: {
@@ -14,12 +13,12 @@ const completedExerciseSchema = new mongoose.Schema({
         reps: {
             type: Number,
             required: true,
-            min: 0
+            default: 0
         },
         weight: {
             type: Number,
             required: true,
-            min: 0
+            default: 0
         },
         completed: {
             type: Boolean,
@@ -35,6 +34,11 @@ const completedWorkoutSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    workoutId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Workout',
+        required: true
+    },
     title: {
         type: String,
         required: true
@@ -43,6 +47,7 @@ const completedWorkoutSchema = new mongoose.Schema({
     exercises: [completedExerciseSchema],
     startTime: {
         type: Date,
+        default: Date.now,
         required: true
     },
     endTime: {
@@ -51,44 +56,32 @@ const completedWorkoutSchema = new mongoose.Schema({
     },
     duration: {
         type: Number,  // בדקות
-        required: true
+        default: 0
     },
     totalVolume: {
         type: Number,  // סך כל המשקל * חזרות
-        required: true
+        default: 0
     }
 }, {
-    timestamps: true  // יוסיף אוטומטית createdAt ו-updatedAt
+    timestamps: true
 });
 
-// מתודות סטטיות
-completedWorkoutSchema.statics.findUserCompletedWorkouts = function(userId) {
-    return this.find({ userId }).sort({ endTime: -1 });
-};
+// חישוב משך האימון והנפח הכולל לפני שמירה
+completedWorkoutSchema.pre('save', function(next) {
+    // חישוב משך האימון בדקות
+    if (this.startTime && this.endTime) {
+        this.duration = Math.round((this.endTime - this.startTime) / (1000 * 60));
+    }
 
-// מתודה לחישוב סטטיסטיקות
-completedWorkoutSchema.statics.getUserStats = async function(userId, startDate, endDate) {
-    const query = { 
-        userId,
-        endTime: { 
-            $gte: startDate, 
-            $lte: endDate 
-        }
-    };
+    // חישוב הנפח הכולל
+    this.totalVolume = this.exercises.reduce((total, exercise) => {
+        return total + exercise.sets.reduce((setTotal, set) => {
+            return setTotal + (set.weight * set.reps);
+        }, 0);
+    }, 0);
 
-    return await this.aggregate([
-        { $match: query },
-        { 
-            $group: {
-                _id: null,
-                totalWorkouts: { $sum: 1 },
-                avgDuration: { $avg: "$duration" },
-                totalVolume: { $sum: "$totalVolume" },
-                avgVolumePerWorkout: { $avg: "$totalVolume" }
-            }
-        }
-    ]);
-};
+    next();
+});
 
 const CompletedWorkout = mongoose.model('CompletedWorkout', completedWorkoutSchema);
 

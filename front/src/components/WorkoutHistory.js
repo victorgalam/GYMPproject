@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { completedWorkoutService } from '../services/completedWorkoutService';
 import { API_BASE_URL } from '../config';
 import { authService } from '../services/authService';
 
@@ -49,35 +49,21 @@ const WorkoutHistory = () => {
     );
   };
 
+  const fetchCompletedWorkouts = async () => {
+    try {
+      setIsLoading(true);
+      const workouts = await completedWorkoutService.getCompletedWorkouts();
+      setCompletedWorkouts(workouts);
+      setError(null);
+    } catch (err) {
+      console.error('שגיאה בטעינת היסטוריית אימונים:', err);
+      setError('לא ניתן לטעון את היסטוריית האימונים כרגע');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchCompletedWorkouts = async () => {
-      try {
-        setIsLoading(true);
-        if (!authService.isAuthenticated()) {
-          setError('אנא התחבר למערכת');
-          return;
-        }
-
-        const headers = authService.getAuthHeaders();
-        const response = await axios.get(`${API_BASE_URL}/api/completed-workout/completed`, {
-          headers: headers
-        });
-        
-        // Sort workouts by date in descending order (newest first)
-        const sortedWorkouts = response.data.sort((a, b) => 
-          new Date(b.startTime) - new Date(a.startTime)
-        );
-        
-        setCompletedWorkouts(sortedWorkouts);
-        setError(null);
-      } catch (err) {
-        console.error('שגיאה בטעינת היסטוריית אימונים:', err.response?.data || err.message);
-        setError(err.response?.data?.message || 'לא ניתן לטעון את היסטוריית האימונים כרגע');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchCompletedWorkouts();
   }, []);
 

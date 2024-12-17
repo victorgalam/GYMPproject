@@ -1,11 +1,6 @@
 const mongoose = require('mongoose');
 
 const exerciseInWorkoutSchema = new mongoose.Schema({
-    id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Exercise',
-        required: true
-    },
     name: {
         type: String,
         required: true
@@ -48,39 +43,32 @@ const workoutSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
-    isRecurring: {
-        type: Boolean,
-        default: false
-    },
-    recurrence: {
-        frequency: {
-            type: String,
-            enum: ['daily', 'weekly', 'monthly'],
-            required: function() { return this.isRecurring; }
-        },
-        interval: {
-            type: Number,
-            min: 1,
-            default: 1,
-            required: function() { return this.isRecurring; }
-        },
-        daysOfWeek: [{
-            type: Number,
-            min: 0,
-            max: 6
-        }],
-        endDate: Date
-    },
-    googleCalendarEventId: String,
-    status: {
-        type: String,
-        enum: ['scheduled', 'completed', 'cancelled'],
-        default: 'scheduled'
-    },
     duration: {
         type: Number,
         required: true,
         min: 1
+    },
+    frequency: {
+        type: String,
+        enum: ['one-time', 'recurring'],
+        default: 'one-time'
+    },
+    schedulePattern: {
+        type: String,
+        enum: ['daily', 'alternate', 'ab'],
+        required: function() {
+            return this.frequency === 'recurring';
+        }
+    },
+    workoutType: {
+        type: String,
+        enum: ['A', 'B', 'regular'],
+        default: 'regular'
+    },
+    status: {
+        type: String,
+        enum: ['scheduled', 'completed', 'cancelled'],
+        default: 'scheduled'
     }
 }, {
     timestamps: true
@@ -88,7 +76,7 @@ const workoutSchema = new mongoose.Schema({
 
 // אינדקסים
 workoutSchema.index({ userId: 1, startDate: 1 });
-workoutSchema.index({ isRecurring: 1, userId: 1 });
+workoutSchema.index({ frequency: 1, userId: 1 });
 
 // וירטואלים
 workoutSchema.virtual('formattedStartDate').get(function() {

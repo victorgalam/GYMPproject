@@ -71,54 +71,26 @@ const WorkoutBuilder = () => {
     checkGoogleAuth();
   }, []);
 
-  const handleSaveWorkout = async () => {
+  const getRecurrenceRule = (pattern, startDate) => {
+    // חישוב תאריך סיום (30 יום מתאריך ההתחלה)
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 29); // 29 כי מתחילים מהיום הראשון
+    const endDateStr = endDate.toISOString().split('T')[0].replace(/-/g, '');
+
+    switch (pattern) {
+      case 'daily':
+        return `RRULE:FREQ=DAILY;UNTIL=${endDateStr}T235959Z`;
+      case 'alternate':
+        return `RRULE:FREQ=DAILY;INTERVAL=2;UNTIL=${endDateStr}T235959Z`;
+      case 'ab':
+        return `RRULE:FREQ=DAILY;INTERVAL=2;UNTIL=${endDateStr}T235959Z`;
+      default:
+        return null;
+    }
+  };
+
+  const handleGoogleCalendarIntegration = async (workoutData) => {
     try {
-      // בדיקת חיבור לגוגל רק אם אין טוקן תקף
-      if (!isAuthenticated) {
-        const token = localStorage.getItem('google_access_token');
-        const tokenExpiry = localStorage.getItem('google_token_expiry');
-        
-        if (!token || !tokenExpiry || new Date(tokenExpiry) <= new Date()) {
-          try {
-            await login();
-          } catch (error) {
-            alert('נא להתחבר תחילה לחשבון Google');
-            return;
-          }
-        }
-      }
-
-      if (selectedExercises.length === 0) {
-        alert('נא להוסיף לפחות תרגיל אחד לאימון');
-        return;
-      }
-
-      // Validate exercises data size
-      const optimizedExercises = selectedExercises.map(exercise => ({
-        name: exercise.name,
-        sets: Number(exercise.sets) || 3,
-        reps: Number(exercise.reps) || 12,
-        weight: Number(exercise.weight) || 0,
-        type: exercise.type || 'weight',
-        notes: exercise.notes || ''
-      }));
-
-      const workoutTitle = `אימון ${workoutTypes.find(t => t.id === workoutType)?.name || ''}`;
-      
-      // Create a more compact description
-      const descriptionData = selectedExercises.map(exercise => {
-        let metrics = '';
-        if (exercise.type === 'weight') {
-          metrics = `משקל: ${exercise.weight}kg, סטים: ${exercise.sets}, חזרות: ${exercise.reps}`;
-        } else if (exercise.type === 'cardio') {
-          metrics = `זמן: ${exercise.time} דקות, מהירות: ${exercise.speed}, שיפוע: ${exercise.incline}`;
-        }
-        return `${exercise.name}\n${metrics}`;
-      }).join('\n\n');
-
-      // הוספת הלינק לתחילת האימון בסוף התיאור
-      const description = `${descriptionData}\n\nלצפייה באימון: http://localhost:3001/user-panel`;
-
       const startDateTime = new Date(selectedDate);
       const [hours, minutes] = selectedTime.split(':');
       startDateTime.setHours(parseInt(hours), parseInt(minutes));
@@ -126,91 +98,126 @@ const WorkoutBuilder = () => {
       const endDateTime = new Date(startDateTime);
       endDateTime.setMinutes(endDateTime.getMinutes() + duration);
 
-      // Prepare request data
-      const requestData = {
-        title: workoutTitle,
-        description,
-        exercises: optimizedExercises,
-        startDate: startDateTime,
-        endDate: endDateTime,
-        duration,
-        frequency,
-        schedulePattern
-      };
+      if (frequency === 'recurring') {
+        // יצירת אירועים חוזרים בהתאם לתבנית
+        const recurrenceRule = getRecurrenceRule(schedulePattern, startDateTime);
+        if (!recurrenceRule) {
+          throw new Error('תבנית חזרה לא תקינה');
+        }
 
-      // Validate request size
-      const requestSize = new Blob([JSON.stringify(requestData)]).size;
-      if (requestSize > 5000000) { // 5MB limit
-        throw new Error('האימון גדול מדי. נא להפחית את מספר התרגילים או את כמות הטקסט בהערות.');
-      }
+        if (schedulePattern === 'ab') {
+          // יצירת שני סוגי אירועים - A ו-B
+          const eventA = {
+            summary: `${workoutData.title} - A`,
+            description: `תרגילים: ${selectedExercises.map(ex => 
+              `\n${ex.name} - ${ex.sets} סטים, ${ex.reps} חזרות`).join('')}`,
+            startDateTime,
+            endDateTime
+          };
 
-      const exerciseDetales = {
-        summary: workoutTitle,
-        description,
-        startDateTime,
-        endDateTime
-      }
-      
-      try {
-        if (frequency === 'one-time') {
-          await addToGoogleCalendar(exerciseDetales);
-          
+          const eventB = {
+            summary: `${workoutData.title} - B`,
+            description: `תרגילים: ${selectedExercises.map(ex => 
+              `\n${ex.name} - ${ex.sets} סטים, ${ex.reps} חזרות`).join('')}`,
+            startDateTime: new Date(startDateTime.getTime() + (24 * 60 * 60 * 1000)), // יום למחרת
+            endDateTime: new Date(endDateTime.getTime() + (24 * 60 * 60 * 1000))
+          };
+
+          await addRecurringToGoogleCalendar(eventA, { recurrence: [recurrenceRule] });
+          await addRecurringToGoogleCalendar(eventB, { recurrence: [recurrenceRule] });
         } else {
-          if (!schedulePattern) {
-            alert('נא לבחור תדירות לאימון הקבוע');
-            return;
-          }
+          // יצירת אירוע חוזר רגיל
+          const event = {
+            summary: workoutData.title,
+            description: `תרגילים: ${selectedExercises.map(ex => 
+              `\n${ex.name} - ${ex.sets} סטים, ${ex.reps} חזרות`).join('')}`,
+            startDateTime,
+            endDateTime
+          };
 
-          const recurrenceRule = getRecurrenceRule(schedulePattern);
-          if (!recurrenceRule) {
-            alert('שגיאה ביצירת תבנית החזרה');
-            return;
-          }
-
-          await addRecurringToGoogleCalendar(exerciseDetales,{
-            recurrence: [recurrenceRule]
-          });
+          await addRecurringToGoogleCalendar(event, { recurrence: [recurrenceRule] });
         }
+      } else {
+        // יצירת אירוע חד פעמי
+        const event = {
+          summary: workoutData.title,
+          description: `תרגילים: ${selectedExercises.map(ex => 
+            `\n${ex.name} - ${ex.sets} סטים, ${ex.reps} חזרות`).join('')}`,
+          startDateTime,
+          endDateTime
+        };
 
-        // Save to server with proper error handling
-        const token = authService.getToken();
-        if (!token) {
-          console.error('No auth token found');
-          navigate('/login');
-          return;
-        }
-
-        const response = await fetch('http://localhost:3000/api/workouts', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(requestData)
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'שגיאה בשמירת האימון');
-        }
-
-        const workoutId = await response.json();
-        setWorkoutId(workoutId);
-
-        alert(frequency === 'one-time' ? 'האימון נוסף בהצלחה!' : 'האימון הקבוע נוסף בהצלחה!');
-        navigate(-1);
-      } catch (error) {
-        if (error.message.includes('Token expired') || error.message.includes('נדרשת התחברות מחדש')) {
-          setIsAuthenticated(false);
-          alert('נא להתחבר מחדש לחשבון Google');
-          login();
-        } else {
-          console.error('Error saving workout:', error);
-          alert('אירעה שגיאה בשמירת האימון: ' + error.message);
-        }
+        await addToGoogleCalendar(event);
       }
     } catch (error) {
-      console.error('Error in handleSaveWorkout:', error);
+      console.error('Google Calendar error:', error);
+      alert('שגיאה בהוספה ליומן גוגל: ' + error.message);
+    }
+  };
+
+  const handleSaveWorkout = async () => {
+    try {
+      // Validate exercises
+      if (selectedExercises.length === 0) {
+        alert('נא להוסיף לפחות תרגיל אחד לאימון');
+        return;
+      }
+
+      if (frequency === 'recurring' && !schedulePattern) {
+        alert('נא לבחור תבנית חזרה לאימון קבוע');
+        return;
+      }
+
+      // Calculate end date (end of month)
+      const endOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+      
+      // Create workout data
+      const workoutData = {
+        title: `אימון ${workoutTypes.find(t => t.id === workoutType)?.name || ''}`,
+        description: selectedExercises.map(ex => `${ex.name} - ${ex.sets} סטים, ${ex.reps} חזרות`).join('\n'),
+        exercises: selectedExercises.map(exercise => ({
+          name: exercise.name,
+          sets: Number(exercise.sets) || 3,
+          reps: Number(exercise.reps) || 12,
+          weight: Number(exercise.weight) || 0
+        })),
+        startDate: selectedDate,
+        endDate: endOfMonth,
+        duration,
+        frequency,
+        schedulePattern,
+        workoutType: 'regular'
+      };
+
+      // First try to save to Google Calendar
+      await handleGoogleCalendarIntegration(workoutData);
+
+      // Then save to server
+      const response = await fetch('http://localhost:3000/api/workouts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authService.getToken()}`
+        },
+        body: JSON.stringify(workoutData)
+      });
+
+      if (!response.ok) {
+        throw new Error('שגיאה בשמירת האימון');
+      }
+
+      const result = await response.json();
+      
+      if (Array.isArray(result.data)) {
+        alert(`נוצרו ${result.data.length} אימונים בהצלחה!`);
+      } else {
+        alert('האימון נשמר בהצלחה!');
+      }
+      
+      navigate(-1);
+
+    } catch (error) {
+      console.error('Error saving workout:', error);
       alert('אירעה שגיאה בשמירת האימון: ' + error.message);
     }
   };
@@ -267,21 +274,6 @@ const WorkoutBuilder = () => {
     });
   };
 
-  const getRecurrenceRule = (pattern) => {
-    switch (pattern) {
-      case 'daily':
-        return 'RRULE:FREQ=DAILY';
-      case 'alternate':
-        return 'RRULE:FREQ=DAILY;INTERVAL=2';
-      case 'twoday':
-        return 'RRULE:FREQ=DAILY;INTERVAL=3';
-      case 'ab':
-        return 'RRULE:FREQ=DAILY;INTERVAL=3';
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="container mx-auto p-4 mt-20" dir="rtl">
       {!isAuthenticated && (
@@ -294,49 +286,43 @@ const WorkoutBuilder = () => {
       )}
       
       <div className="space-y-6 text-right">
-        <div className="mb-8 bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-xl font-semibold mb-4 text-right">תדירות האימון</h3>
-          <div className="flex flex-row-reverse gap-4">
-            <button
-              className={`px-6 py-2 rounded-full ${
-                frequency === 'recurring'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-              onClick={() => setFrequency('recurring')}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              תדירות האימון
+            </label>
+            <select
+              value={frequency}
+              onChange={(e) => setFrequency(e.target.value)}
+              className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             >
-              קבוע
-            </button>
-            <button
-              className={`px-6 py-2 rounded-full ${
-                frequency === 'one-time'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-              onClick={() => {
-                setFrequency('one-time');
-                setSchedulePattern('');
-              }}
-            >
-              חד פעמי
-            </button>
+              <option value="one-time">חד פעמי</option>
+              <option value="recurring">אימון קבוע</option>
+            </select>
           </div>
 
           {frequency === 'recurring' && (
-            <div className="mt-4">
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                תבנית חזרה
+              </label>
               <select
                 value={schedulePattern}
                 onChange={(e) => setSchedulePattern(e.target.value)}
-                className="w-full p-2 border rounded-md text-right"
-                dir="rtl"
+                className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               >
-                <option value="">בחר תדירות</option>
-                {Object.entries(schedulePatterns).map(([key, pattern]) => (
-                  <option key={key} value={key}>
-                    {pattern.label}
-                  </option>
-                ))}
+                <option value="">בחר תבנית</option>
+                <option value="daily">כל יום (30 אימונים)</option>
+                <option value="alternate">יום כן יום לא (15 אימונים)</option>
+                <option value="ab">אימון A/B (15 אימונים מכל סוג)</option>
               </select>
+              {schedulePattern && (
+                <p className="text-sm text-gray-600 mt-2">
+                  {schedulePattern === 'daily' && '* יווצרו 30 אימונים, אחד לכל יום'}
+                  {schedulePattern === 'alternate' && '* יווצרו 15 אימונים, יום כן יום לא'}
+                  {schedulePattern === 'ab' && '* יווצרו 30 אימונים, 15 מסוג A ו-15 מסוג B לסירוגין'}
+                </p>
+              )}
             </div>
           )}
         </div>

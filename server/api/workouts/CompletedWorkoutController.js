@@ -2,15 +2,14 @@ const CompletedWorkout = require('./CompletedWorkoutModel');
 const Workout = require('./WorkoutModel');
 
 class CompletedWorkoutController {
-    // שמירת אימון שהושלם
     static async completeWorkout(req, res) {
         try {
             console.log('=== Complete Workout Debug ===');
             const { workoutId } = req.params;
-            const { exercises, endTime } = req.body;
+            const { exercises, startTime, endTime } = req.body;
             const userId = req.user._id;
             
-            console.log('Request Data:', { workoutId, exercises, endTime, userId });
+            console.log('Request Data:', { workoutId, exercises, startTime, endTime, userId });
 
             // מציאת האימון המקורי
             const originalWorkout = await Workout.findById(workoutId);
@@ -23,66 +22,40 @@ class CompletedWorkoutController {
                 return res.status(403).json({ message: 'אין הרשאה לסיים אימון זה' });
             }
 
-            // עיבוד התרגילים והוספת מזהים חסרים
-            const processedExercises = exercises.map(exercise => {
-                // וידוא שיש exerciseId תקין
-                if (!exercise.exerciseId) {
-                    console.warn('Missing exerciseId for exercise:', exercise);
-                    // אם אין exerciseId, ננסה למצוא את התרגיל המקורי
-                    const originalExercise = originalWorkout.exercises.find(e => e.name === exercise.name);
-                    if (originalExercise) {
-                        exercise.exerciseId = originalExercise.id;
-                    }
-                }
-
-                return {
-                    exerciseId: exercise.exerciseId,
-                    name: exercise.name,
-                    sets: exercise.sets.map(set => ({
-                        reps: set.reps || 0,
-                        weight: set.weight || 0,
-                        completed: true
-                    }))
-                };
-            });
+            // עיבוד התרגילים
+            const processedExercises = exercises.map(exercise => ({
+                exerciseId: exercise.exerciseId,
+                name: exercise.name,
+                sets: exercise.sets.map(set => ({
+                    reps: parseInt(set.reps) || 0,
+                    weight: parseInt(set.weight) || 0,
+                    completed: true
+                }))
+            }));
 
             console.log('Processed exercises:', processedExercises);
-
-            // חישוב משך האימון בדקות
-            const startTime = originalWorkout.startDate;
-            const duration = Math.round((new Date(endTime) - new Date(startTime)) / 1000 / 60);
-            
-            // חישוב נפח האימון הכולל
-            let totalVolume = 0;
-            processedExercises.forEach(exercise => {
-                exercise.sets.forEach(set => {
-                    totalVolume += set.weight * set.reps;
-                });
-            });
 
             // יצירת אימון שהושלם
             const completedWorkout = new CompletedWorkout({
                 userId,
+                workoutId,
                 title: originalWorkout.title,
                 description: originalWorkout.description,
                 exercises: processedExercises,
-                startTime,
-                endTime,
-                duration,
-                totalVolume
+                startTime: startTime || new Date(),
+                endTime: endTime || new Date()
             });
 
             console.log('Saving completed workout:', completedWorkout);
 
             await completedWorkout.save();
-            console.log('Workout saved successfully');
-
+            
             // מחיקת האימון המקורי
             await Workout.findByIdAndDelete(workoutId);
             console.log('Original workout deleted');
 
             res.status(201).json({
-                message: 'האימון הושלם בהצלחה',
+                message: 'האימון הושלם בהצלחה ונמחק מהרשימה',
                 completedWorkout
             });
 
@@ -90,8 +63,7 @@ class CompletedWorkoutController {
             console.error('שגיאה בהשלמת האימון:', error);
             res.status(500).json({ 
                 message: 'שגיאת שרת בהשלמת האימון',
-                error: error.message,
-                stack: error.stack // רק בסביבת פיתוח
+                error: error.message
             });
         }
     }
@@ -99,18 +71,16 @@ class CompletedWorkoutController {
     // קבלת כל האימונים שהושלמו עבור משתמש
     static async getUserCompletedWorkouts(req, res) {
         try {
-            console.log('מנסה להביא אימונים שהושלמו עבור משתמש:', req.user._id);
             const userId = req.user._id;
             const completedWorkouts = await CompletedWorkout.find({ userId })
                 .sort({ endTime: -1 });
             
-            console.log('נמצאו אימונים:', completedWorkouts.length);
             res.json(completedWorkouts);
         } catch (error) {
             console.error('שגיאה בקבלת אימונים שהושלמו:', error);
             res.status(500).json({ 
                 message: 'שגיאת שרת בקבלת אימונים שהושלמו',
-                error: error.message 
+                error: error.message
             });
         }
     }

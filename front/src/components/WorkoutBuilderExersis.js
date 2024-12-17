@@ -253,11 +253,7 @@ export const schedulePatterns = [
 
   { id: 'alternate', name: 'יום כן יום לא', days: 1, rest: 1 },
 
-  { id: 'twoday', name: 'יומיים אימון יום מנוחה', days: 2, rest: 1 },
-
-  { id: 'ab', name: 'אימון A אימון B מנוחה', days: 2, rest: 1, split: true },
-
-  { id: 'custom', name: 'התאמה אישית', days: 0, rest: 0 }
+  { id: 'ab', name: 'אימון A/B', days: 2, rest: 1 }
 
 ];
 

@@ -4,21 +4,53 @@ const mongoose = require('mongoose');
 // יצירת אימון חדש
 const createWorkout = async (req, res) => {
     try {
-        const { title, description, exercises, startDate, endDate, duration } = req.body;
+        const { 
+            title, 
+            description, 
+            exercises, 
+            startDate, 
+            duration,
+            frequency,
+            schedulePattern,
+            workoutType 
+        } = req.body;
+        
         const userId = req.user._id;
 
-        exercises.forEach(exercise => {
-            exercise["id"] = new mongoose.Types.ObjectId();
-        });
+        // אם זה אימון קבוע, ניצור מספר אימונים
+        if (frequency === 'recurring') {
+            const workouts = await createRecurringWorkouts({
+                userId,
+                title,
+                description,
+                exercises,
+                startDate: new Date(startDate),
+                duration,
+                schedulePattern,
+                workoutType
+            });
+
+            res.status(201).json({
+                status: 'success',
+                data: workouts
+            });
+            return;
+        }
+
+        // אימון חד פעמי
+        const endDateTime = new Date(startDate);
+        endDateTime.setMinutes(endDateTime.getMinutes() + duration);
 
         const workout = new Workout({
             userId,
             title,
             description,
             exercises,
-            startDate,
-            endDate,
-            duration
+            startDate: new Date(startDate),
+            endDate: endDateTime,
+            duration,
+            frequency: 'one-time',
+            workoutType: 'regular'
         });
 
         await workout.save();
@@ -35,6 +67,78 @@ const createWorkout = async (req, res) => {
             error: error.message
         });
     }
+};
+
+// פונקציית עזר ליצירת אימונים מחזוריים
+const createRecurringWorkouts = async (workoutData) => {
+    const { 
+        userId,
+        title,
+        description,
+        exercises,
+        startDate, 
+        duration,
+        schedulePattern,
+        workoutType 
+    } = workoutData;
+
+    const workouts = [];
+    let currentDate = new Date(startDate);
+    
+    // חישוב מרווח הימים בין אימונים והגדרת מספר האימונים הרצוי
+    let interval = 1; // ברירת מחדל - כל יום
+    let totalWorkouts = 30; // ברירת מחדל - 30 אימונים
+
+    switch (schedulePattern) {
+        case 'daily':
+            interval = 1;
+            totalWorkouts = 30; // אימון כל יום למשך 30 יום
+            break;
+        case 'alternate':
+            interval = 2;
+            totalWorkouts = 15; // 15 אימונים במשך 30 יום
+            break;
+        case 'ab':
+            interval = 2;
+            totalWorkouts = 30; // 30 אימונים (15 A + 15 B)
+            break;
+    }
+
+    let workoutCount = 0;
+    while (workoutCount < totalWorkouts) {
+        const endDateTime = new Date(currentDate);
+        endDateTime.setMinutes(endDateTime.getMinutes() + duration);
+
+        // יצירת עותק של האימון עם תאריך עדכני
+        const workout = new Workout({
+            userId,
+            title,
+            description,
+            exercises: exercises.map(ex => ({
+                name: ex.name,
+                sets: ex.sets,
+                reps: ex.reps,
+                weight: ex.weight
+            })),
+            startDate: new Date(currentDate),
+            endDate: endDateTime,
+            duration,
+            frequency: 'recurring',
+            schedulePattern,
+            workoutType: schedulePattern === 'ab' ? 
+                (workoutCount % 2 === 0 ? 'A' : 'B') : 
+                'regular'
+        });
+
+        await workout.save();
+        workouts.push(workout);
+
+        // קידום התאריך לאימון הבא
+        currentDate.setDate(currentDate.getDate() + interval);
+        workoutCount++;
+    }
+
+    return workouts;
 };
 
 // יצירת אימון מחזורי
@@ -372,6 +476,18 @@ const deleteWorkout = async (req, res) => {
     }
 };
 
+// Delete all workouts for a user
+const deleteAllWorkouts = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    await Workout.deleteMany({ userId });
+    res.status(200).json({ message: 'כל האימונים נמחקו בהצלחה' });
+  } catch (error) {
+    console.error('Error deleting all workouts:', error);
+    res.status(500).json({ error: 'שגיאה במחיקת האימונים' });
+  }
+};
+
 module.exports = {
     createWorkout,
     createRecurringWorkout,
@@ -379,5 +495,6 @@ module.exports = {
     getUserRecurringWorkouts,
     getWorkoutById,
     updateWorkout,
-    deleteWorkout
+    deleteWorkout,
+    deleteAllWorkouts
 };
