@@ -2,14 +2,14 @@
   "name": "gymp-project",
   "version": "1.0.0",
   "description": "GYM Project Application",
-  "main": "server/server.js",
+  "main": "server.js",
   "engines": {
     "node": "18.x"
   },
   "scripts": {
-    "start": "node server/server.js",
+    "start": "node server.js",
     "heroku-postbuild": "cd front && npm install && npm run build",
-    "dev": "cd server && npm run dev"
+    "dev": "nodemon server.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
