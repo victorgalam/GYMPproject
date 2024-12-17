@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "cd server && npm install && node server.js",
-    "heroku-postbuild": "cd front && npm install && npm run build && cd ../server && npm install",
+    "heroku-postbuild": "cd front && npm install && npm run build",
     "build": "cd front && npm install && npm run build",
     "dev": "cd server && npm run dev",
     "install-all": "npm install && cd front && npm install && cd ../server && npm install"

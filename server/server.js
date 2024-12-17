@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
+
+// Load environment variables
 require('dotenv').config();
 
 const app = express();
@@ -15,81 +17,37 @@ console.log('MONGODB_URI exists:', !!process.env.MONGODB_URI);
 console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
 console.log('Current working directory:', process.cwd());
 
-// Middleware
+// CORS configuration
 const corsOptions = {
-    origin: process.env.NODE_ENV === 'production' 
-        ? ['https://young-ocean-77806-2eafe9f964ec.herokuapp.com', 'https://young-ocean-77806.herokuapp.com']
-        : ['http://localhost:3000', 'http://localhost:3001'],
+    origin: ['https://young-ocean-77806-2eafe9f964ec.herokuapp.com', 'http://localhost:3000'],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 
+// Middleware
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Debug middleware
-app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-    next();
-});
+// API Routes
+app.use('/api/users', require('./api/User/UserRoute'));
+app.use('/api/personal-details', require('./api/PersonalDetails/PersonalDetailsRoute'));
+app.use('/api/workouts', require('./api/workouts/WorkoutRoute'));
+app.use('/api/completed-workout', require('./api/workouts/CompletedWorkoutRoute'));
 
-// Serve static files from the React app
-try {
-    const staticPath = path.join(__dirname, '../front/build');
-    console.log('Static path:', staticPath);
-    if (!require('fs').existsSync(staticPath)) {
-        console.error('Static path does not exist:', staticPath);
-    }
-    app.use(express.static(staticPath));
-} catch (error) {
-    console.error('Error setting up static files:', error);
+// Serve static files from React app
+if (process.env.NODE_ENV === 'production') {
+    const buildPath = path.join(__dirname, '../front/build');
+    console.log('Serving static files from:', buildPath);
+    
+    app.use(express.static(buildPath));
+    
+    // Handle React routing, return all requests to React app
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(buildPath, 'index.html'));
+    });
 }
-
-// Routes
-try {
-    app.use('/api/users', require('./api/User/UserRoute'));
-    app.use('/api/personal-details', require('./api/PersonalDetails/PersonalDetailsRoute'));
-    app.use('/api/workouts', require('./api/workouts/WorkoutRoute'));
-    app.use('/api/completed-workout', require('./api/workouts/CompletedWorkoutRoute'));
-} catch (error) {
-    console.error('Error setting up routes:', error);
-}
-
-// MongoDB connection with retry logic
-const connectToMongoDB = async (retries = 5) => {
-    for (let i = 0; i < retries; i++) {
-        try {
-            console.log(`Attempting to connect to MongoDB (attempt ${i + 1}/${retries})...`);
-            await mongoose.connect(process.env.MONGODB_URI, {
-                useNewUrlParser: true,
-                useUnifiedTopology: true
-            });
-            console.log("Connected to MongoDB successfully");
-            return true;
-        } catch (err) {
-            console.error(`MongoDB connection attempt ${i + 1} failed:`, err);
-            if (i === retries - 1) {
-                console.error("All MongoDB connection attempts failed");
-                return false;
-            }
-            await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds before retrying
-        }
-    }
-};
-
-// Handle React routing, return all requests to React app
-app.get('*', (req, res) => {
-    const indexPath = path.join(__dirname, '../front/build', 'index.html');
-    console.log('Serving index.html from:', indexPath);
-    if (require('fs').existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        console.error('index.html not found at:', indexPath);
-        res.status(404).send('Frontend build files not found');
-    }
-});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -109,33 +67,38 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server only after attempting MongoDB connection
-const startServer = async () => {
-    const mongoConnected = await connectToMongoDB();
-    if (!mongoConnected) {
-        console.error("Could not start server due to MongoDB connection failure");
+// MongoDB connection with retry logic
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+        console.log('MongoDB Connected Successfully');
+    } catch (err) {
+        console.error('MongoDB connection error:', err);
         process.exit(1);
     }
-
-    const PORT = process.env.PORT || 3001;
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-        console.log('Server initialization complete');
-    });
 };
 
-startServer().catch(err => {
-    console.error('Failed to start server:', err);
-    process.exit(1);
-});
+// Start server
+const PORT = process.env.PORT || 3000;
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM received. Shutting down gracefully');
-    mongoose.connection.close(() => {
-        console.log('MongoDB connection closed');
-        process.exit(0);
-    });
-});
+const startServer = async () => {
+    try {
+        await connectDB();
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+            if (process.env.NODE_ENV === 'production') {
+                console.log('Running in production mode');
+            } else {
+                console.log('Running in development mode');
+            }
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
 
-module.exports = app;
+startServer();
