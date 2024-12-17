@@ -36,6 +36,7 @@ const WorkoutBuilder = () => {
   );
   const [duration, setDuration] = useState(60);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [workoutId, setWorkoutId] = useState('');
 
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -106,11 +107,17 @@ const WorkoutBuilder = () => {
       
       // Create a more compact description
       const descriptionData = selectedExercises.map(exercise => {
-        const metrics = getExerciseMetrics(exercise);
+        let metrics = '';
+        if (exercise.type === 'weight') {
+          metrics = `משקל: ${exercise.weight}kg, סטים: ${exercise.sets}, חזרות: ${exercise.reps}`;
+        } else if (exercise.type === 'cardio') {
+          metrics = `זמן: ${exercise.time} דקות, מהירות: ${exercise.speed}, שיפוע: ${exercise.incline}`;
+        }
         return `${exercise.name}\n${metrics}`;
       }).join('\n\n');
 
-      const description = JSON.stringify(descriptionData);
+      // הוספת הלינק לתחילת האימון בסוף התיאור
+      const description = `${descriptionData}\n\nלצפייה באימון: http://localhost:3001/user-panel`;
 
       const startDateTime = new Date(selectedDate);
       const [hours, minutes] = selectedTime.split(':');
@@ -131,29 +138,22 @@ const WorkoutBuilder = () => {
         schedulePattern
       };
 
-      console.log("-> Request Data: ",requestData);
-
       // Validate request size
       const requestSize = new Blob([JSON.stringify(requestData)]).size;
       if (requestSize > 5000000) { // 5MB limit
         throw new Error('האימון גדול מדי. נא להפחית את מספר התרגילים או את כמות הטקסט בהערות.');
       }
 
-      console.log("-> addToGoogleCalendar: ",{
+      const exerciseDetales = {
         summary: workoutTitle,
         description,
         startDateTime,
         endDateTime
-      });
+      }
       
       try {
         if (frequency === 'one-time') {
-          await addToGoogleCalendar({
-            summary: workoutTitle,
-            description,
-            startDateTime,
-            endDateTime
-          });
+          await addToGoogleCalendar(exerciseDetales);
           
         } else {
           if (!schedulePattern) {
@@ -167,21 +167,9 @@ const WorkoutBuilder = () => {
             return;
           }
 
-          console.log("-> addRecurringToGoogleCalendar: ", JSON.stringify({
-            summary: workoutTitle,
-            description,
-            startDateTime,
-            endDateTime,
+          await addRecurringToGoogleCalendar(exerciseDetales,{
             recurrence: [recurrenceRule]
-          }));
-
-          // await addRecurringToGoogleCalendar(JSON.stringify({
-          //   summary: workoutTitle,
-          //   description,
-          //   startDateTime,
-          //   endDateTime,
-          //   recurrence: [recurrenceRule]
-          // }));
+          });
         }
 
         // Save to server with proper error handling
@@ -205,6 +193,9 @@ const WorkoutBuilder = () => {
           const errorData = await response.json();
           throw new Error(errorData.message || 'שגיאה בשמירת האימון');
         }
+
+        const workoutId = await response.json();
+        setWorkoutId(workoutId);
 
         alert(frequency === 'one-time' ? 'האימון נוסף בהצלחה!' : 'האימון הקבוע נוסף בהצלחה!');
         navigate(-1);
