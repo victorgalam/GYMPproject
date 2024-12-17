@@ -9,9 +9,10 @@
   "scripts": {
     "start": "node index.js",
     "build": "cd front && npm install && npm run build",
-    "heroku-postbuild": "npm run build",
+    "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install && npm run build",
     "dev": "nodemon index.js"
   },
+  "cacheDirectories": ["node_modules", "front/node_modules"],
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
