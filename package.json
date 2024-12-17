@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node server/server.js",
     "dev": "nodemon server/server.js",
-    "huroku-postbuild": "cd front && npm install && npm run build"
+    "huroku-postbuild": "cd front && npm install && npm react-scripts build"
   },
   "keywords": [],
   "author": "",
