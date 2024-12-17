@@ -1,3 +1,7 @@
-export const API_BASE_URL = process.env.NODE_ENV === 'production'
-    ? 'https://young-ocean-77806-2eafe9f964ec.herokuapp.com'
-    : 'http://localhost:3000';
+const config = {
+  API_BASE_URL: process.env.NODE_ENV === 'production'
+    ? ''  // Empty string for same-origin requests in production
+    : 'http://localhost:3000'
+};
+
+export default config;

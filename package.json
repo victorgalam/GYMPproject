@@ -1,11 +1,11 @@
 {
   "name": "gymp-server",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js",
     "dev": "nodemon server/server.js",
-    "huroku-postbuild": "cd front && npm install && npm react-scripts build"
+    "heroku-postbuild": "cd front && npm install && npm run build"
   },
   "keywords": [],
   "author": "",
