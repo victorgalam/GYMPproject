@@ -29,11 +29,11 @@ app.use('/api/workouts', workoutRoutes);
 app.use('/api/completed-workouts', completedWorkoutRoutes);
 
 // Serve static files from the React build
-app.use(express.static(path.join(__dirname, 'front/build')));
+app.use(express.static(path.join(__dirname, '../front/public')));
 
 // Handle React routing, return all requests to React app
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'front/build', 'index.html'));
+  res.sendFile(path.join(__dirname, '../front/public', 'index.html'));
 });
 
 // Error handling middleware
