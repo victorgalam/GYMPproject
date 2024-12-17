@@ -6,16 +6,23 @@ require('dotenv').config();
 
 const app = express();
 
+console.log('Starting server...');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+console.log('MONGODB_URI exists:', !!process.env.MONGODB_URI);
+
 // Middleware
 const corsOptions = {
-    origin: [process.env.FRONTEND_URL || 'https://young-ocean-77806.herokuapp.com'],
+    origin: process.env.NODE_ENV === 'production' 
+        ? ['https://young-ocean-77806.herokuapp.com']
+        : ['http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
-console.log('CORS enabled for origins:', corsOptions.origin.join(', '));
+console.log('CORS enabled for origins:', corsOptions.origin);
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -29,7 +36,9 @@ app.use((req, res, next) => {
 });
 
 // Serve static files from the React app
-app.use(express.static(path.join(__dirname, '../front/build')));
+const staticPath = path.join(__dirname, '../front/build');
+console.log('Static path:', staticPath);
+app.use(express.static(staticPath));
 
 // Routes
 app.use('/api/users', require('./api/User/UserRoute'));
@@ -39,23 +48,27 @@ app.use('/api/workouts', require('./api/workouts/WorkoutRoute'));
 app.use('/api/completed-workout', require('./api/workouts/CompletedWorkoutRoute')); // הוספת נתיב לאימונים שהושלמו
 
 // MongoDB connection
-const OPT = {
+console.log('Connecting to MongoDB...');
+mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
-};
-
-mongoose.connect(process.env.MONGODB_URI, OPT)
-    .then(() => console.log("Connected to MongoDB"))
-    .catch(err => console.error("MongoDB connection error:", err));
+})
+.then(() => console.log("Connected to MongoDB successfully"))
+.catch(err => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1); // Exit if can't connect to MongoDB
+});
 
 // Handle React routing, return all requests to React app
 app.get('*', (req, res) => {
+    console.log('Serving index.html for path:', req.path);
     res.sendFile(path.join(__dirname, '../front/build', 'index.html'));
 });
 
 // Error handling - כולל טיפול בשגיאות JWT
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error('Error occurred:', err);
+    console.error('Stack trace:', err.stack);
 
     // טיפול בשגיאות JWT
     if (err.name === 'JsonWebTokenError') {
@@ -73,9 +86,9 @@ app.use((err, req, res, next) => {
     }
 
     // שגיאות אחרות
-    res.status(500).json({
-        status: 'error',
-        message: err.message
+    res.status(err.status || 500).json({
+        message: err.message || 'Internal Server Error',
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
 });
 
@@ -88,9 +101,10 @@ app.use((req, res) => {
     });
 });
 
-const port = process.env.PORT || 3001;
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+    console.log('Server initialization complete');
 });
 
 // Graceful shutdown
