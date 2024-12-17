@@ -8,7 +8,7 @@ const app = express();
 
 // Middleware
 const corsOptions = {
-    origin: ['http://localhost:3000', 'http://localhost:3001', process.env.FRONTEND_URL],
+    origin: [process.env.FRONTEND_URL || 'https://young-ocean-77806.herokuapp.com'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']

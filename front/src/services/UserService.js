@@ -3,9 +3,11 @@
 import axios from 'axios';
 import { authService } from './authService';
 
-const API_URL = process.env.NODE_ENV === 'production' 
-    ? '/api/users' 
-    : 'http://localhost:3000/api/users';
+const BASE_URL = process.env.NODE_ENV === 'production'
+    ? 'https://young-ocean-77806.herokuapp.com/api'
+    : 'http://localhost:3000/api';
+
+const API_URL = `${BASE_URL}/users`;
 
 const userService = {
    // הרשמת משתמש חדש למערכת

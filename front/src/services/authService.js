@@ -1,8 +1,10 @@
 import axios from 'axios';
 
-const API_URL = process.env.NODE_ENV === 'production' 
-    ? '/api' 
+const BASE_URL = process.env.NODE_ENV === 'production'
+    ? 'https://young-ocean-77806.herokuapp.com/api'
     : 'http://localhost:3000/api';
+
+const API_URL = `${BASE_URL}/users`;
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user';
 

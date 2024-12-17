@@ -1,13 +1,15 @@
 import axios from 'axios';
 import { authService } from './authService';
 
-const API_URL = process.env.NODE_ENV === 'production' 
-    ? '/api/completed-workout' 
-    : 'http://localhost:3000/api/completed-workout';
+const BASE_URL = process.env.NODE_ENV === 'production'
+    ? 'https://young-ocean-77806.herokuapp.com/api'
+    : 'http://localhost:3000/api';
+
+const API_URL = `${BASE_URL}/completed-workout`;
 
 // יצירת instance חדש של axios עם ה-baseURL הנכון
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json'
   }
