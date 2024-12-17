@@ -14,7 +14,7 @@ console.log('MONGODB_URI exists:', !!process.env.MONGODB_URI);
 // Middleware
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production' 
-        ? ['https://young-ocean-77806.herokuapp.com']
+        ? ['https://young-ocean-77806-2eafe9f964ec.herokuapp.com', 'https://young-ocean-77806.herokuapp.com']
         : ['http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
