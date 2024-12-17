@@ -9,18 +9,19 @@
   "scripts": {
     "start": "cd server && npm install && node server.js",
     "heroku-postbuild": "cd front && npm install && npm run build && cd ../server && npm install",
-    "build": "cd front && npm install && npm run build"
+    "build": "cd front && npm install && npm run build",
+    "dev": "cd server && npm run dev"
   },
+  "cacheDirectories": [
+    "node_modules",
+    "front/node_modules",
+    "server/node_modules"
+  ],
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
     "mongoose": "^7.0.0",
     "dotenv": "^16.0.3",
     "path": "^0.12.7"
-  },
-  "cacheDirectories": [
-    "node_modules",
-    "front/node_modules",
-    "server/node_modules"
-  ]
+  }
 }
