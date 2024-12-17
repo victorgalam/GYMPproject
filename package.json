@@ -7,8 +7,8 @@
     "node": "18.x"
   },
   "scripts": {
-    "start": "cd server && node server.js",
-    "heroku-postbuild": "cd front && npm install && npm run build && cd ../server && npm install",
+    "start": "node server/server.js",
+    "heroku-postbuild": "cd front && npm install && npm run build",
     "dev": "cd server && npm run dev"
   },
   "dependencies": {
