@@ -40,27 +40,50 @@ const WorkoutBuilder = () => {
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       localStorage.setItem('google_access_token', tokenResponse.access_token);
+      // שמירת זמן תפוגה - שעה מעכשיו
+      const expiryTime = new Date();
+      expiryTime.setHours(expiryTime.getHours() + 1);
+      localStorage.setItem('google_token_expiry', expiryTime.toISOString());
       setIsAuthenticated(true);
     },
     onError: (error) => console.error('Google Calendar login failed:', error)
   });
 
   useEffect(() => {
-    const token = localStorage.getItem('google_access_token');
-    const tokenExpiry = localStorage.getItem('google_token_expiry');
-    if (token && tokenExpiry && new Date(tokenExpiry) > new Date()) {
-      setIsAuthenticated(true);
-    }
+    // בדיקת תוקף הטוקן בטעינת הקומפוננטה
+    const checkGoogleAuth = () => {
+      const token = localStorage.getItem('google_access_token');
+      const tokenExpiry = localStorage.getItem('google_token_expiry');
+      
+      if (token && tokenExpiry) {
+        const isValid = new Date(tokenExpiry) > new Date();
+        setIsAuthenticated(isValid);
+        
+        // אם הטוקן פג תוקף, נמחק אותו
+        if (!isValid) {
+          localStorage.removeItem('google_access_token');
+          localStorage.removeItem('google_token_expiry');
+        }
+      }
+    };
+
+    checkGoogleAuth();
   }, []);
 
   const handleSaveWorkout = async () => {
     try {
+      // בדיקת חיבור לגוגל רק אם אין טוקן תקף
       if (!isAuthenticated) {
-        try {
-          await login();
-        } catch (error) {
-          alert('נא להתחבר תחילה לחשבון Google');
-          return;
+        const token = localStorage.getItem('google_access_token');
+        const tokenExpiry = localStorage.getItem('google_token_expiry');
+        
+        if (!token || !tokenExpiry || new Date(tokenExpiry) <= new Date()) {
+          try {
+            await login();
+          } catch (error) {
+            alert('נא להתחבר תחילה לחשבון Google');
+            return;
+          }
         }
       }
 
@@ -82,10 +105,12 @@ const WorkoutBuilder = () => {
       const workoutTitle = `אימון ${workoutTypes.find(t => t.id === workoutType)?.name || ''}`;
       
       // Create a more compact description
-      const description = selectedExercises.map(exercise => {
+      const descriptionData = selectedExercises.map(exercise => {
         const metrics = getExerciseMetrics(exercise);
         return `${exercise.name}\n${metrics}`;
       }).join('\n\n');
+
+      const description = JSON.stringify(descriptionData);
 
       const startDateTime = new Date(selectedDate);
       const [hours, minutes] = selectedTime.split(':');
@@ -106,12 +131,21 @@ const WorkoutBuilder = () => {
         schedulePattern
       };
 
+      console.log("-> Request Data: ",requestData);
+
       // Validate request size
       const requestSize = new Blob([JSON.stringify(requestData)]).size;
       if (requestSize > 5000000) { // 5MB limit
         throw new Error('האימון גדול מדי. נא להפחית את מספר התרגילים או את כמות הטקסט בהערות.');
       }
 
+      console.log("-> addToGoogleCalendar: ",{
+        summary: workoutTitle,
+        description,
+        startDateTime,
+        endDateTime
+      });
+      
       try {
         if (frequency === 'one-time') {
           await addToGoogleCalendar({
@@ -120,6 +154,7 @@ const WorkoutBuilder = () => {
             startDateTime,
             endDateTime
           });
+          
         } else {
           if (!schedulePattern) {
             alert('נא לבחור תדירות לאימון הקבוע');
@@ -132,13 +167,21 @@ const WorkoutBuilder = () => {
             return;
           }
 
-          await addRecurringToGoogleCalendar({
+          console.log("-> addRecurringToGoogleCalendar: ", JSON.stringify({
             summary: workoutTitle,
             description,
             startDateTime,
             endDateTime,
             recurrence: [recurrenceRule]
-          });
+          }));
+
+          // await addRecurringToGoogleCalendar(JSON.stringify({
+          //   summary: workoutTitle,
+          //   description,
+          //   startDateTime,
+          //   endDateTime,
+          //   recurrence: [recurrenceRule]
+          // }));
         }
 
         // Save to server with proper error handling
