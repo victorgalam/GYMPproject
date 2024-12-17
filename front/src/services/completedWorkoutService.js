@@ -1,15 +1,10 @@
 import axios from 'axios';
 import { authService } from './authService';
-
-const BASE_URL = process.env.NODE_ENV === 'production'
-    ? 'https://young-ocean-77806-2eafe9f964ec.herokuapp.com/api'
-    : 'http://localhost:3000/api';
-
-const API_URL = `${BASE_URL}/completed-workouts`;
+import { API_BASE_URL } from '../config';
 
 // יצירת instance של axios עם הגדרות בסיסיות
 const api = axios.create({
-    baseURL: BASE_URL,
+    baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json'
     }
@@ -36,7 +31,7 @@ export const completedWorkoutService = {
             console.log('Workout ID:', workoutId);
             console.log('Workout Data:', JSON.stringify(workoutData, null, 2));
 
-            const response = await api.post(`${API_URL}/complete/${workoutId}`, workoutData);
+            const response = await api.post(`/completed-workouts/complete/${workoutId}`, workoutData);
             return response.data;
         } catch (error) {
             console.error('=== Debug Error ===');
@@ -49,10 +44,11 @@ export const completedWorkoutService = {
 
     async getCompletedWorkouts() {
         try {
-            const response = await api.get(`${API_URL}/completed`);
-            return response.data.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+            const response = await api.get(`/completed-workouts/completed`);
+            console.log('Fetched completed workouts:', response.data);
+            return response.data;
         } catch (error) {
-            console.error('Error fetching completed workouts:', error);
+            console.error('Error getting completed workouts:', error);
             throw error;
         }
     },
@@ -69,7 +65,7 @@ export const completedWorkoutService = {
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
 
-            const response = await api.get(`${API_URL}/stats?${params}`);
+            const response = await api.get(`/completed-workouts/stats?${params}`);
 
             console.log('=== Debug Workout Stats Response ===');
             console.log('Response Data:', response.data);
