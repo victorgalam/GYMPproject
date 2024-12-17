@@ -1,6 +1,5 @@
 const CompletedWorkout = require('./CompletedWorkoutModel');
 const Workout = require('./WorkoutModel');
-const Exercise = require('./ExerciseModel');
 
 class CompletedWorkoutController {
     // שמירת אימון שהושלם
