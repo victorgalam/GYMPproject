@@ -2,27 +2,25 @@
   "name": "gymp-project",
   "version": "1.0.0",
   "description": "GYM Project Application",
+  "main": "server/server.js",
   "engines": {
-    "node": "18.x",
-    "npm": "10.x"
+    "node": "18.x"
   },
   "scripts": {
-    "start": "cd server && npm install && node server.js",
-    "heroku-postbuild": "cd front && npm install && npm run build",
-    "build": "cd front && npm install && npm run build",
-    "dev": "cd server && npm run dev",
-    "install-all": "npm install && cd front && npm install && cd ../server && npm install"
+    "start": "cd server && node server.js",
+    "heroku-postbuild": "cd front && npm install && npm run build && cd ../server && npm install",
+    "dev": "cd server && npm run dev"
   },
-  "cacheDirectories": [
-    "node_modules",
-    "front/node_modules",
-    "server/node_modules"
-  ],
   "dependencies": {
-    "express": "^4.18.2",
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
-    "mongoose": "^7.0.0",
     "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.0.0",
     "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
   }
 }
