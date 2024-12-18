@@ -28,17 +28,17 @@ apiInstance.interceptors.request.use(
 export const completedWorkoutService = {
     async completeWorkout(workoutId, workoutData) {
         try {
-            console.log('=== Debug Complete Workout ===');
-            console.log('Workout ID:', workoutId);
-            console.log('Workout Data:', JSON.stringify(workoutData, null, 2));
+            console.log('=== מידע על השלמת אימון ===');
+            console.log('מזהה אימון:', workoutId);
+            console.log('נתוני אימון:', JSON.stringify(workoutData, null, 2));
 
             const response = await api.post(`/api/completed-workouts/complete/${workoutId}`, workoutData);
             return response.data;
         } catch (error) {
-            console.error('=== Debug Error ===');
-            console.error('Error completing workout:', error);
-            console.error('Error response:', error.response?.data);
-            console.error('Error status:', error.response?.status);
+            console.error('=== שגיאה ===');
+            console.error('שגיאה בהשלמת אימון:', error);
+            console.error('תגובת שגיאה:', error.response?.data);
+            console.error('סטטוס שגיאה:', error.response?.status);
             throw error;
         }
     },
@@ -46,20 +46,20 @@ export const completedWorkoutService = {
     async getCompletedWorkouts() {
         try {
             const response = await api.get('/api/completed-workouts/completed');
-            console.log('Fetched completed workouts:', response.data);
+            console.log('אימונים שהושלמו:', response.data);
             return response.data;
         } catch (error) {
-            console.error('Error getting completed workouts:', error);
+            console.error('שגיאה בקבלת אימונים שהושלמו:', error);
             throw error;
         }
     },
 
     async getWorkoutStats(userId, startDate, endDate) {
         try {
-            console.log('=== Debug Workout Stats Request ===');
-            console.log('User ID:', userId);
-            console.log('Start Date:', startDate);
-            console.log('End Date:', endDate);
+            console.log('=== בקשת סטטיסטיקות אימון ===');
+            console.log('מזהה משתמש:', userId);
+            console.log('תאריך התחלה:', startDate);
+            console.log('תאריך סיום:', endDate);
 
             const params = new URLSearchParams();
             if (userId) params.append('userId', userId);
@@ -67,12 +67,11 @@ export const completedWorkoutService = {
             if (endDate) params.append('endDate', endDate);
 
             const response = await api.get(`/api/completed-workouts/stats?${params}`);
-            console.log('=== Debug Workout Stats Response ===');
-            console.log('Response Data:', response.data);
-
+            console.log('=== תגובת סטטיסטיקות אימון ===');
+            console.log('נתוני תגובה:', response.data);
             return response.data;
         } catch (error) {
-            console.error('Error fetching workout stats:', error);
+            console.error('שגיאה בקבלת סטטיסטיקות אימון:', error);
             throw error;
         }
     }

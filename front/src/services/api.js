@@ -5,7 +5,11 @@ import { authService } from './authService';
 // Create axios instance with default config
 const api = axios.create({
   baseURL: apiConfig.baseURL,
-  headers: apiConfig.headers
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  withCredentials: true
 });
 
 // Add request interceptor for auth token
@@ -35,12 +39,13 @@ api.interceptors.response.use(
           window.location.href = '/login';
           break;
         case 403:
-          // Handle forbidden
-          console.error('Access forbidden:', error.response.data);
+          console.error('גישה נדחתה:', error.response.data);
           break;
         default:
-          console.error('API Error:', error.response.data);
+          console.error('שגיאת API:', error.response.data);
       }
+    } else {
+      console.error('שגיאת רשת:', error.message);
     }
     return Promise.reject(error);
   }

@@ -3,11 +3,11 @@ import api from './api';
 const workoutService = {
     async createWorkout(workoutData) {
         try {
-            console.log('Creating workout:', workoutData);
+            console.log('יוצר אימון:', workoutData);
             const response = await api.post('/api/workouts', workoutData);
             return response.data;
         } catch (error) {
-            console.error('Error creating workout:', error);
+            console.error('שגיאה ביצירת אימון:', error);
             throw error;
         }
     },
@@ -17,7 +17,7 @@ const workoutService = {
             const response = await api.get('/api/workouts/my');
             return response.data;
         } catch (error) {
-            console.error('Error fetching workouts:', error);
+            console.error('שגיאה בטעינת אימונים:', error);
             throw error;
         }
     },
@@ -27,7 +27,7 @@ const workoutService = {
             const response = await api.put(`/api/workouts/${workoutId}`, workoutData);
             return response.data;
         } catch (error) {
-            console.error('Error updating workout:', error);
+            console.error('שגיאה בעדכון אימון:', error);
             throw error;
         }
     },
@@ -37,7 +37,7 @@ const workoutService = {
             const response = await api.delete(`/api/workouts/${workoutId}`);
             return response.data;
         } catch (error) {
-            console.error('Error deleting workout:', error);
+            console.error('שגיאה במחיקת אימון:', error);
             throw error;
         }
     }
